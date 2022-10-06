@@ -1,0 +1,10 @@
+{
+"study_name"                : "census-income",
+"source_url"                : "http://archive.ics.uci.edu/ml/machine-learning-databases/adult/",
+"data_file_raw"             : "census-income_train.csv",
+"element_names"             : ["age", "work", "fnlw", "edu", "edun", "marit", "occ", "rel", "race", "sex", "capg", "capl", "hours", "nativ", "ovr50"],
+"target_element_name"       : "ovr50",
+"target_mapping"            : "{' >50K':1, ' <=50K':0}",
+"test"                      : "True",
+"tree_bin_min_leaf"         : 1000
+}

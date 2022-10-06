@@ -1,0 +1,10 @@
+{
+"study_name"                  : "airline-satisfaction",
+"source_url"                  : "https://www.kaggle.com/datasets/teejmahal20/airline-passenger-satisfaction",
+"data_file_raw"               : "airline-satisfaction_train.csv",
+"rename_elements"             : "{'Unnamed: 0':'row_id'}",
+"target_element_name"         : "satisfaction",
+"target_mapping"              : "{'satisfied':1, 'neutral or dissatisfied':0}",
+"ignore"                      : "id",
+"tree_bin_min_leaf"           : 5000
+}

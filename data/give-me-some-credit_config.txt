@@ -1,0 +1,9 @@
+{
+"study_name"                : "give-me-some-credit",
+"source_url"                : "https://www.kaggle.com/competitions/GiveMeSomeCredit/",
+"data_file_raw"             : "give-me-some-credit_train.csv",
+"target_element_name"       : "SeriousDlqin2yrs",
+"rename_elements"           : "{'Unnamed: 0':'Id'}",
+"test"                      : "True",
+"tree_bin_min_leaf"         : 10000
+}

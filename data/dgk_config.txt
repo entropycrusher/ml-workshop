@@ -1,0 +1,12 @@
+{
+"study_name"                : "dgk",
+"source_url"                : "https://www.kaggle.com/c/DontGetKicked/",
+"data_file_raw"             : "dgk_train.csv",
+"recall_file_raw"           : "dgk_recall.csv",
+"target_element_name"       : "IsBadBuy",
+"test"                      : "True",
+"ignore"                    : ["WheelTypeID", "RefId"],
+"dates"                     : ["PurchDate"],
+"numeric_nominal"           : ["BYRNO", "VNZIP1"],
+"tree_bin_min_leaf"         : 1000
+}
