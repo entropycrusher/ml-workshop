@@ -57,9 +57,8 @@ print(stats_numeric)
 
 ### YOUR TURN: do the same for the 'object' elements
 ### Are there any differences in the stats, compared to the numeric elements?
-stats_object = working.describe(include=['object']).T
-print('\nStats about the object elements:')
-print(stats_object)
+
+
 
 ### Save the numeric stats to a benchmark file
 BENCHMARK_FOLDER_NAME = "../bmrk/"
@@ -72,8 +71,11 @@ stats_numeric.to_csv(stats_numeric_filename, sep=BENCHMARK_SEPARATOR, index=True
 ### YOUR TURN: do the same for the 'object' elements
 ### Any changes you would make?
 
+
+
 ### INTERACTIVE: write a *function* to produce all of the stats and write
 ### them to benchmark file(s)...
+
 
 
 ## What does the data look like (distributions)?
@@ -89,6 +91,8 @@ plt.ylabel('Frequency')
 plt.show()
 
 ### YOUR TURN: By hand, repeat the above for a couple more numeric elements (your choice)
+
+
 
 ### Suppose we want to produce histograms for ALL of the numeric elements...
 ### This is our first use of a *for* loop
@@ -110,6 +114,9 @@ for element_name in numerics:
 ### This is our first use of numpy
 working['duration_log10'] = np.log10(working[working['duration']>0].duration)
 
+### YOUR TURN: plot the histogram for duration_log10
+
+
 ### What do you notice about the duration_log10 distribution?
 ### Are there any other elements where you might apply a log?
 
@@ -117,7 +124,8 @@ working['duration_log10'] = np.log10(working[working['duration']>0].duration)
 ### Next, let's look at a category (object) element, job, and produce a bar chart
 ### See https://matplotlib.org/stable/api/_as_gen/matplotlib.pyplot.barh.html
 element_name = 'job'
-working[element_name].value_counts().plot.barh().invert_yaxis()
+working[element_name].value_counts().plot.barh()
+#working[element_name].value_counts().plot.barh().invert_yaxis()
 title_string = 'What does the ' + element_name + ' distribution look like?'
 plt.title(title_string)
 plt.ylabel(element_name)
@@ -127,6 +135,8 @@ plt.show()
 ### What do you notice about the job distribution?
 
 ## YOUR TURN: produce bar charts for ALL of the object elements...
+
+
 
 ### YOUR TURN: write function(s) to produce ALL of the histograms
 ### and ALL of the bar charts...
@@ -145,5 +155,8 @@ plt.xlabel(element_name)
 plt.ylabel('Frequency')
 plt.show()
 
+
+### Challenge: modify your plotting function to SAVE each of the charts
+### to a different file in your ../figs/ folder.
 
 
