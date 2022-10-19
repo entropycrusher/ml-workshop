@@ -57,12 +57,15 @@ print(stats_numeric)
 
 ### YOUR TURN: do the same for the 'object' elements
 ### Are there any differences in the stats, compared to the numeric elements?
+stats_object = working.describe(include=['object']).T
+print('\nStats about the object elements:')
+print(stats_object)
 
-### Save the stats to a benchmark file
+### Save the numeric stats to a benchmark file
 BENCHMARK_FOLDER_NAME = "../bmrk/"
 BENCHMARK_SEPARATOR   = "\t"
 stats_numeric_filename = BENCHMARK_FOLDER_NAME + STUDY_NAME + "_stats_numeric.tab"
-stats_numeric.to_csv(stats_numeric_filename, sep=BENCHMARK_SEPARATOR, index=False)
+stats_numeric.to_csv(stats_numeric_filename, sep=BENCHMARK_SEPARATOR, index=True)
 
 ### Why bother saving the stats to a benchmark file?
 
