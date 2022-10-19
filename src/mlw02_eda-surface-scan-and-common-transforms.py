@@ -64,7 +64,7 @@ print(stats_object)
 ### Save the numeric stats to a benchmark file
 BENCHMARK_FOLDER_NAME = "../bmrk/"
 BENCHMARK_SEPARATOR   = "\t"
-stats_numeric_filename = BENCHMARK_FOLDER_NAME + STUDY_NAME + "_stats_numeric.tab"
+stats_numeric_filename = BENCHMARK_FOLDER_NAME + STUDY_NAME + "_numeric_stats.tab"
 stats_numeric.to_csv(stats_numeric_filename, sep=BENCHMARK_SEPARATOR, index=True)
 
 ### Why bother saving the stats to a benchmark file?
