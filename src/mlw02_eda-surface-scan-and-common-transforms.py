@@ -75,6 +75,38 @@ stats_numeric.to_csv(stats_numeric_filename, sep=BENCHMARK_SEPARATOR, index=True
 
 ### INTERACTIVE: write a *function* to produce all of the stats and write
 ### them to benchmark file(s)...
+def compute__macro_stats(df,
+                         study_name="bank-telemarketing",
+                         benchmark_folder_name="../bmrk/",
+                         separator="\t"):
+    '''
+    Parameters
+    ----------
+    df : dataframe
+        this is the dataframe I want stats for.
+    study_name : string, optional
+        name of the study. The default is "bank-telemarketing".
+    benchmark_folder_name : study, optional
+        where to write the file. The default is "../bmrk".
+    separator : string, optional
+        separator to use for the benchmark file. The default is "\t".
+
+    Returns
+    -------
+    None.
+
+    '''
+    stats_object = df.describe(include=['object']).T
+    stats_object_filename = benchmark_folder_name + study_name + "_obj_stats.tab"
+    stats_object.to_csv(stats_object_filename, sep=separator, index=True)
+
+    stats_numeric = df.describe(include=['number']).T
+    stats_numeric_filename = benchmark_folder_name + study_name + "_num_stats.tab"
+    stats_numeric.to_csv(stats_numeric_filename, sep=separator, index=True)
+
+    return()
+
+compute__macro_stats(working)
 
 
 
@@ -97,12 +129,12 @@ plt.show()
 ### Suppose we want to produce histograms for ALL of the numeric elements...
 ### This is our first use of a *for* loop
 numerics = working.select_dtypes(include='number').columns.tolist()    # list of numeric elements
-for element_name in numerics:
-    print(element_name)
-    working[element_name].plot.hist(bins=20)
-    title_string = 'What does the ' + element_name + ' distribution look like?'
+for item in numerics:
+    print(item)
+    working[item].plot.hist(bins=20)
+    title_string = 'What does the ' + item + ' distribution look like?'
     plt.title(title_string)
-    plt.xlabel(element_name)
+    plt.xlabel(item)
     plt.ylabel('Frequency')
     plt.show()
 

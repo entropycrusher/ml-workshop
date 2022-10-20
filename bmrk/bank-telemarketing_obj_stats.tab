@@ -1,0 +1,12 @@
+	count	unique	top	freq
+job	41188	12	admin.	10422
+marital	41188	4	married	24928
+education	41188	8	university.degree	12168
+default	41188	3	no	32588
+housing	41188	3	yes	21576
+loan	41188	3	no	33950
+contact	41188	2	cellular	26144
+month	41188	10	may	13769
+day_of_week	41188	5	thu	8623
+poutcome	41188	3	nonexistent	35563
+y	41188	2	no	36548
