@@ -2,7 +2,9 @@
 """
 Created on Wed Oct  5 07:40:22 2022
 
-@author: Tim
+Machine Learning Workshop Session 3
+
+@author: Tim G.
 
 """
 
@@ -46,7 +48,7 @@ pd.crosstab(working[TARGET_ELEMENT_NAME], working[BINARY_TARGET_NAME])
 
 # How would we know if, say, a particular 'job' category is a good predictor
 ## that someone is likely to 'subscribe'?
-## Maybe a category has a high subscription rate (probability)...
+## Maybe a job category has a high subscription rate (probability)...
 
 ## What does it mean to have a high rate or a low rate?
 ## Always ask, "Compared to what?"
@@ -82,16 +84,16 @@ crosstab_vs_outcome = crosstab_vs_outcome.sort_values('rate',ascending=False)
 
 ## What do these results tell you?  How can you use these results... today?
 
-## YOUR TURN: write a function to return the crosstab for a specified element,
-## and the specified (binary) target.
-## Then run your function for all of the category elements
+## YOUR TURN: write a function to return the rates for a specified element,
+## and a specified (binary) target element.  (You might use more than one.)
+## Then run your function for all of the category elements.
 ## Look thru your results.  What stands out to you?
 
 
 
 
 # This is all good, but wouldn't you rather look at a chart?
-## How do we plot the rates for each crosstab?
+## How do we plot the rates for each element?
 ## What would we like to see on the plot?
 
 ## Start with our usual, horiz bar chart
@@ -128,26 +130,27 @@ plt.show()
 
 
 # How can we produce similar results for numeric elements?
-## Use binning (aka, bucketing or quantizing) to cut into ranges
+## Use binning (aka, bucketing or quantizing) to cut the numbers into ranges
 BIN_COUNT = 4
 (out_ignore, bin_boundaries) = pd.qcut(working['age'], BIN_COUNT,
                                        retbins=True,
                                        duplicates='drop')
 
 ## Remember this: Everything you do has to work on new or different data!
-## Refine the first and last boundaries for data beyond the range
+## Refine the first and last boundaries to handle data beyond the range
 bin_boundaries[0]                     = -np.inf
 bin_boundaries[len(bin_boundaries)-1] =  np.inf
 
 ## Add an element in the working file for 'quantized age'
-### Note that here you're *applying* the bin boundaries that you created above.
+### Note that here you're *applying* the bin boundaries that you already created above.
+### Note the naming convention for the 'quantized' element
 working['age_q'] = pd.cut(working['age'], bin_boundaries,
                           include_lowest = True,
                           duplicates     ='drop',
                           right          = True
                           )
 
-## What do you get?
+## Did it work?
 working['age_q'].value_counts()  # we expect roughly equal counts in each bin
 
 
