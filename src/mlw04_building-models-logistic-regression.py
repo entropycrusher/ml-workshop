@@ -58,7 +58,7 @@ candidates.append('intercept')
 
 # Fit the logistic regression model to the data
 ## Use the sm (statsmodels.api) package
-logit_model=sm.Logit(target,predictors[candidates])   # first, create the logistic "object"
+logit_model=sm.Logit(target,predictors)               # first, create the logistic "object"
 logistic_regression=logit_model.fit(disp=False)       # then, you can build/fit the model
 
 ## Did anything happen?  Here's how you can display the results
@@ -78,6 +78,14 @@ estimates = logistic_regression.predict(predictors)
 ## YOUR TURN: How do we know if the predictions are any good?
 ### And how well would you expect to do on a problem like this?
 ### Note: pseudo-r-squared
+THRESHOLD = 0.05
+condition = estimates > THRESHOLD
+logistic_classification  = pd.Series(0, index=range(len(predictors)), name='class')
+logistic_classification[condition] = 1
+pd.crosstab(target, logistic_classification)
+
+## YOUR TURN: Change the threshold and compare the results.
+### Where would you set the threshold?
 
 # Plot the results as an ROC curve
 ## NOTE: We're using a function from our very own mlw.py!!
