@@ -28,6 +28,7 @@ TARGET_ELEMENT_NAME = 'y'
 TARGET_MAPPING      = {'yes':1, 'no':0}
 BINARY_TARGET_NAME  = 'subscribed'
 
+# see https://scikit-learn.org/stable/modules/generated/sklearn.tree.DecisionTreeClassifier.html
 TREE_CRITERION         = "entropy"                  # this block contains decision
 TREE_MAX_DEPTH         = 4                          # tree parameters
 TREE_MIN_SAMPLES_SPLIT = 500
@@ -88,7 +89,8 @@ plt.rcParams["figure.figsize"] = (TREE_PLOT_WIDTH, TREE_PLOT_HEIGHT)
 tree.plot_tree(clf, feature_names=candidates, 
                label  =TREE_PLOT_LABEL, 
                filled =TREE_PLOT_FILLED, 
-               rounded=TREE_PLOT_ROUNDED);
+               rounded=TREE_PLOT_ROUNDED,
+               proportion=True);
 
 ### YOUR TURN: What do you see?  How do you *read* the tree?
 
@@ -98,7 +100,7 @@ tree.plot_tree(clf, feature_names=candidates,
                label  =TREE_PLOT_LABEL, 
                filled =TREE_PLOT_FILLED, 
                rounded=TREE_PLOT_ROUNDED,
-               proportion=True);
+               proportion=False);
 
 ### YOUR TURN: Review the decision tree results: what do you notice?
 #### Which predictors are "most important"?
@@ -142,6 +144,11 @@ tree_auc = mlw.plot__roc_curve(target, target_prob)
 
 # CHALLENGE: write a function to produce a *usable* tree diagram.
 
+
+
+
+predictors.drop(columns=['duration'], inplace=True)   # to drop a column(s) from a dataframe
+candidates.remove('duration')                         # to remove an item(s) from a list
 
 
 
