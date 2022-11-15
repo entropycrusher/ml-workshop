@@ -10,10 +10,11 @@ Created on Sat Oct 29 10:57:55 2022
 ## They are provided as learning tools, without warranty, 
 ## either expressed or implied.
 
-import matplotlib.pyplot as plt
-import seaborn           as sns                  # another plotting package
-from sklearn.metrics     import roc_auc_score    # for measuring performance
-from sklearn.metrics     import roc_curve        # for plotting performance
+import matplotlib.pyplot      as     plt
+import seaborn                as     sns              # another plotting package
+from sklearn.metrics          import roc_auc_score    # for measuring performance
+from sklearn.metrics          import roc_curve        # for plotting performance
+from sklearn.model_selection  import train_test_split # for partitioning a dataset
 
 ROC_FIGURE_WIDTH        = 16
 ROC_FIGURE_HEIGHT       = 16
@@ -70,3 +71,54 @@ def plot__roc_curve(target, estimates,
 
 
 
+def split__dataset(dataset, target, test_set_fraction=0.5, random_seed=62362):
+    '''
+    Parameters
+    ----------
+    dataset : dataframe
+        dataset to be split into training and testing subsets.
+    target : string
+        name of the target element.
+    test_set_fraction : float, optional
+        the fraction of rows to assign to the testing subset. The default is 0.5.
+    random_seed : integer, optional
+        the random seed to ensure repeatability, if desired. The default is 62362.
+
+    Returns
+    -------
+    (input_train, input_test, target_train, target_test, success) : 
+        (dataframe, dataframe, series, series, Boolean)
+        tuple including the following:
+            training predictor(s), the testing predictor(s),
+            training outcome, testing outcome, and a success flag
+        Note that all indexes for the training components will be reset and in sync
+        as will the indexes for the testing components.
+    '''
+    # identify the predictors
+    predictors = dataset.columns.to_list()
+    predictors.remove(target)
+
+    # use the scikit learn function to split the dataset
+    # note that the target_series is used to stratify the dataset.
+    (input_train, input_test, target_train, target_test) = train_test_split(
+        dataset[predictors],
+        dataset[target],
+        stratify    =dataset[target],
+        test_size   =test_set_fraction,
+        random_state=random_seed
+        )
+
+    # sort the training input and target by index, then reset the indexes
+    input_train  = input_train.sort_index(axis=0).copy()
+    target_train = target_train.sort_index(axis=0).copy()
+    input_train.reset_index( inplace=True, drop=True)
+    target_train.reset_index(inplace=True, drop=True)
+
+    # sort the testing  input and target by index, then reset the indexes
+    input_test   = input_test.sort_index(axis=0).copy()
+    target_test  = target_test.sort_index(axis=0).copy()
+    input_test.reset_index( inplace=True, drop=True)
+    target_test.reset_index(inplace=True, drop=True)
+
+    # return the training and testing components plus a success flag
+    return(input_train, input_test, target_train, target_test, True)
