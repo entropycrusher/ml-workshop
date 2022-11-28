@@ -110,7 +110,7 @@ if len(constant_elements) > 0:
 
 
 # Are there any numeric nominal elements?
-## They look like numbers, but aren't really.
+## They look like numbers, but it doesn't make sense to apply math opeations to them.
 NUMERIC_NOMINAL_ELEMENTS = ['previous']
 MISSING_VALUE_CHARACTER  = '.'
 for element in NUMERIC_NOMINAL_ELEMENTS:
@@ -119,6 +119,16 @@ for element in NUMERIC_NOMINAL_ELEMENTS:
 
 # YOUR TURN: Specify any numeric nominal elements.
 ## Why do you convert them from numbers to strings?  What happens if you don't?
+
+
+
+
+# convert any object elements (string, nominal) to categorical, 
+# add a '.' category for missing and replace any NaNs with '.'
+success = mlw.convert__object_to_category(working)
+
+# YOUR TURN: Convert any object elements to categorical.
+## Why do you convert them?  What happens if you don't?
 
 
 

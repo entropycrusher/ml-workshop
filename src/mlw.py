@@ -71,6 +71,33 @@ def plot__roc_curve(target, estimates,
 
 
 
+def convert__object_to_category(df, missing_value_character='.'):
+    '''
+    Parameters
+    ----------
+    df : dataframe
+        the dataframe containing elements to be converted.
+    missing_value_character : string. optional
+        the character to use when replacing missing values.  The default is '.'
+
+    Returns
+    -------
+    success : Boolean
+         a success flag.  The object elements of the dataframe 
+         are converted to category elements in place.
+    '''
+    nominals = df.select_dtypes(include='object').columns.tolist()
+    for element in nominals:
+        df[element] = df[element].astype('category')
+        if '.' not in df[element].cat.categories:
+            df[element] = df[element].cat.add_categories('.').fillna('.')
+        else:
+            df[element] = df[element].fillna('.')
+
+    return(True)
+
+
+
 def split__dataset(dataset, target, test_set_fraction=0.5, random_seed=62362):
     '''
     Parameters
