@@ -10,6 +10,7 @@ Created on Sat Oct 29 10:57:55 2022
 ## They are provided as learning tools, without warranty, 
 ## either expressed or implied.
 
+import pandas                 as     pd
 import matplotlib.pyplot      as     plt
 import seaborn                as     sns              # another plotting package
 from sklearn.metrics          import roc_auc_score    # for measuring performance
@@ -149,3 +150,119 @@ def split__dataset(dataset, target, test_set_fraction=0.5, random_seed=62362):
 
     # return the training and testing components plus a success flag
     return(input_train, input_test, target_train, target_test, True)
+
+
+
+
+
+def run__standard_prep(data_folder_name="../data/",
+                       data_file_name="train.csv",
+                       file_separator=",",
+                       study_name="study_name",
+                       rename_elements={},
+                       ignore_elements=[],
+                       target_element_name='target',
+                       target_mapping={},
+                       binary_target_name='binary_target',
+                       numeric_nominal_elements=[],
+                       missing_value_character='.',
+                       test_set_fraction=0.5,
+                       random_seed_value=62362
+                       ):
+    '''
+    Parameters
+    ----------
+    data_folder_name : string, optional
+        location of the data file. The default is "../data/".
+    data_file_name : string, optional
+        name of the data file. The default is "train.csv".
+    file_separator : string, optional
+        the delimiter between fields in the data file. The default is ",".
+    study_name : string, optional
+        the name of the study (primarily for labeling purposes). The default is "study_name".
+    rename_elements : dictionary, optional
+        mapping dictionary from original names to new names. The default is {}.
+    ignore_elements : list of strings, optional
+        the names of the elements to ignore. The default is [].
+    target_element_name : string, optional
+        the name of the target element. The default is 'target'.
+    target_mapping : dictionary, optional
+        mapping dictionary from original labels to 0/1. The default is {}.
+    binary_target_name : string, optional
+        the name of the binary target element. The default is 'binary_target'.
+    numeric_nominal_elements : list of strings, optional
+        the names of the numeric elements to treat as nominal. The default is [].
+    missing_value_character : string, optional
+        single character to use for missing values. The default is '.'.
+    test_set_fraction : float, optional
+        the fraction of the dataset to reserve for testing. The default is 0.5.
+    random_seed_value : int, optional
+        the random seed for splitting data into training and testing. The default is 62362.
+
+    Returns
+    -------
+    None.
+
+    '''
+    # Read the dataset.
+    working = pd.read_csv(data_folder_name + data_file_name, sep=file_separator)
+    
+    # Rename elements
+    if len(rename_elements) > 0:
+        working = working.rename(columns=rename_elements)
+    
+    # Ignore elements
+    if len(ignore_elements) > 0:
+        working.drop(columns=ignore_elements, inplace=True)
+
+    # Map target to 0/1
+    if len(target_mapping) > 0:
+        working[binary_target_name] = working[target_element_name].map(target_mapping).astype('float')
+        working.drop(columns=target_element_name, inplace=True)
+    else:
+        binary_target_name = target_element_name
+
+    # Drop rows where the target is missing
+    working = working.dropna(subset=[binary_target_name])
+
+
+    # Drop any columns that are useless
+    ## First, identify any columns consisting entirely of NaNs and drop them
+    all_nan = working.isna().all(axis=0)
+    to_drop = all_nan[all_nan].index.to_list()
+    if len(to_drop) > 0:
+        print('\n\nThe following elements are entirely missing (NaN), and they will be dropped:', to_drop)
+        working.drop(columns=to_drop, inplace=True)
+
+    ## Next, identify any columns that are constant (single-valued) and drop them
+    constant_elements = []
+    for element in working.columns.to_list():
+        if not (working[element] != working[element].iloc[0]).any():
+            constant_elements.append(element)
+    if len(constant_elements) > 0:
+        print('\n\nThe following elements are constant, and they will be dropped:', constant_elements)
+        working.drop(columns=constant_elements, inplace=True)
+
+    # Convert numeric nominal elements
+    for element in numeric_nominal_elements:
+        working[element] = working[element].astype(str)
+        working[element].replace('nan', missing_value_character, inplace=True)
+
+    # Convert object elements (string, nominal) to categorical
+    success = convert__object_to_category(working)
+
+    # Split the working dataset into a training subset and testing subset
+    (predictors_train, predictors_test, target_train, target_test, success) = split__dataset(
+                    working, binary_target_name,
+                    test_set_fraction = test_set_fraction,
+                    random_seed       = random_seed_value
+                    )
+
+    return(working, 
+           binary_target_name, 
+           predictors_train, 
+           predictors_test, 
+           target_train, 
+           target_test
+           )
+
