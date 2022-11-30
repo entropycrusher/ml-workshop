@@ -10,14 +10,17 @@ Created on Sat Oct 29 10:57:55 2022
 ## They are provided as learning tools, without warranty, 
 ## either expressed or implied.
 
-import pandas                 as     pd
-import numpy                  as     np
-import matplotlib.pyplot      as     plt
-import seaborn                as     sns              # another plotting package
-from sklearn.metrics          import roc_auc_score    # for measuring performance
-from sklearn.metrics          import roc_curve        # for plotting performance
-from sklearn.model_selection  import train_test_split # for partitioning a dataset
-from sklearn.tree             import DecisionTreeClassifier # for building a decision tree
+import pandas                     as     pd
+import numpy                      as     np
+import matplotlib.pyplot          as     plt
+import seaborn                    as     sns              # another plotting package
+from sklearn.metrics              import roc_auc_score    # for measuring performance
+from sklearn.metrics              import roc_curve        # for plotting performance
+from sklearn.model_selection      import train_test_split # for partitioning a dataset
+from sklearn.tree                 import DecisionTreeClassifier # for building a decision tree
+from statsmodels.stats.proportion import proportion_confint
+from numpy                        import log as log
+from scipy.stats                  import binom
 
 
 ROC_FIGURE_WIDTH        = 16
@@ -473,6 +476,302 @@ def compute__tree_bin_boundaries(predictor_series, target_series,
     bin_boundaries[-1] =  np.inf
 
     return bin_boundaries
+
+
+
+
+def compute__rate_tables_for_all_category(predictors, target,
+                                          target_rate,
+                                          target_p_value=.0001,
+                                          confidence_limits_p_value=.0001
+                                          ):
+    '''
+    Parameters
+    ----------
+    predictors : dataframe
+        the collection of predictors.
+    target : series
+        the target outcome.
+    target_rate : float
+        the fraction of positive outcomes.
+    target_p_value : float, optional
+        p-value for testing significance of a category rate versus the
+        target rate. The default is .0001.
+    confidence_limits_p_value : float, optional
+        p-value for producing the confidence limits around the category rate.
+        The default is .0001.
+
+    Returns
+    -------
+    rate_tables : dict
+        the dictionary of rate tables for the category elements
+    success : Boolean
+         a success flag.
+    '''
+    # create empty dict for storing the rate tables
+    rate_tables = {}
+
+    # get the list of category elements
+    category_element_names = list__category_elements(predictors)
+
+    # if any, cycle thru all of the category elements and estimate rates
+    for category_element_name in category_element_names:
+        # use the function to compute the rate table
+        rates = compute__rate_table(predictors[category_element_name], target, target_rate,
+                                    target_rate_p_value=target_p_value,
+                                    conf_limits_p_value=confidence_limits_p_value)
+
+        # add the key-value pair for the category element name and the rates to a dict
+        rates['element'] = category_element_name
+        rates.index.name ='category'
+        rate_tables[category_element_name] = rates
+
+    return rate_tables
+
+
+
+
+def list__category_elements(df):
+    '''
+    Parameters
+    ----------
+    df : pandas DataFrame
+        this is usually the working DataFrame.
+
+    Returns
+    -------
+    list
+        the list of category elements that are present in the DataFrame.
+    '''
+    return df.select_dtypes(include='category').columns.tolist()
+
+
+
+
+def compute__rate_table(predictor_series, target_series, target_rate,
+                        target_rate_p_value=.0001,
+                        conf_limits_p_value=.0001):
+    '''
+    Parameters
+    ----------
+    predictor_series : Series, numeric
+        the predictor (input).
+    target_series : Series, numeric, binary
+        the target, or outcome of interest.
+    target_rate : float
+        rate (fraction) of positive outcomes for comparison to the predictor
+        categories.
+    target_rate_p_value : float, optional
+        p-value for testing significance of a category rate versus the
+        target rate. The default is .0001.
+    conf_limits_p_value : float, optional
+        p-value for producing the confidence limits around the category rate.
+        The default is .0001.
+
+    Returns
+    -------
+    rate_table : data frame
+        table of relevant values associated with each category, including:
+        the measured rate of positive outcomes, count of observations, 
+        number of positive outcomes,
+        flag (and probability) indicating significance versus the target rate,
+        lower and upper confidence limits for the category rate,
+        scoring rate to be used when applying to a category element
+        (may differ) from the measured rate when the measured rate is NOT
+        significantly different than the target rate.
+    '''
+    # start to compute the rate table
+    base     = target_series.groupby(predictor_series)
+    rate     = base.mean().fillna(target_rate)
+    count    = base.count()
+    positive = base.sum()
+    
+    rate_table         = pd.concat([rate, count, positive], axis=1)
+    rate_table.columns = ['rate','count','positive']
+    
+    # test the category rate for significance versus the target rate
+    rate_table['rate_test'] = rate_table.apply(
+        lambda row : category_rate_test(
+            row['count'], row['positive'], target_rate, sig_level=target_rate_p_value
+            ),
+        axis=1)
+    rate_table[['flag','prob']] = pd.DataFrame(rate_table['rate_test'].tolist(), index=rate_table.index)
+    rate_table.drop(columns=['rate_test'], inplace=True)
+    
+    # compute the lower and upper confidence limits around the rates
+    rate_table['conf_lims'] = rate_table.apply(
+        lambda row : compute__confidence_limits(row['count'], row['rate'], p_value=conf_limits_p_value),
+        axis=1)
+    rate_table[['rate_lower','rate_upper']] = pd.DataFrame(rate_table['conf_lims'].tolist(), index=rate_table.index)
+    rate_table.drop(columns=['conf_lims'], inplace=True)
+    
+    # fill non-sig entries with the target rate for use when scoring
+    rate_table['scoring_rate'] = rate_table['rate']
+    rate_table.loc[rate_table['flag']==0, 'scoring_rate']=target_rate
+    
+    # compute the scoring_delta_rate as the difference from the target rate
+    rate_table['scoring_delta_rate'] = rate_table['scoring_rate'] - target_rate
+
+    return rate_table
+
+
+
+
+def category_rate_test(ncat, npos, trate, sig_level=0.001, is_nmin=True):
+    '''Test whether the category rate (of positives) is significantly different than
+    the overall target rate for a dataset.
+    
+    Parameters:
+        ncat is the number of records that fall in the category
+        npos is the number of positive outcomes associated with the category
+        trate is the target rate of positive outcomes for the dataset
+        sig_level is the significance level of interest for the test
+        is_nmin is a flag that a rule of thumb for the minimum number of records will be applied
+        
+    Returns:
+        (flag, cat_prob) where:
+            flag is -1, 1, or 0 if the category rate is deemed significantly 
+                below, above, or not different from, respectively, the overall target rate
+            cat_prob is the probability of observing the given category rate by chance
+    '''
+    
+    # check if the category is too small to consider.  My criterion is that the category is big enough
+    # to see at least one positive outcome with high probability (1 - sig_level)
+    np.seterr(divide = 'ignore')
+    if trate > 0 and trate < 1:
+        nmin = log(sig_level)/log(1.0 - trate)  # see https://socratic.org/questions/how-do-you-find-the-probability-of-at-least-one-success-when-n-independent-berno
+    elif trate == 1:
+        nmin = 1
+        print('100 percent rate of positive outcomes detected: review results carefully')
+    else:
+        nmin = np.inf
+        print('zero percent rate of positive outcomes detected: review results carefully')
+    np.seterr(divide = 'warn')
+
+    if (ncat < nmin) and is_nmin:
+        return 0, 0.5
+    
+    # compute the rate of positives for the category
+    cat_rate = npos/ncat
+    
+    # mod the sig_level for the two-sided test
+    sig_level = sig_level/2.0
+    
+    if cat_rate <= trate:    # use this branch if the category rate is below the target rate
+        cat_prob = binom.cdf(k=npos,n=ncat,p=trate)
+        if cat_prob <= sig_level:
+            return -1, cat_prob
+        else:
+            return  0, cat_prob
+    else:                    # use this branch if the category rate is at/above the target rate
+        cat_prob = 1 - binom.cdf(k=npos,n=ncat,p=trate)
+        if cat_prob <= sig_level:
+            return  1, cat_prob
+        else:
+            return  0, cat_prob
+
+
+
+
+def compute__confidence_limits(bin_count_avg, nom_target_rate, p_value=0.0001):
+    '''
+    Parameters
+    ----------
+    bin_count_avg : float
+        expected or average number of observations in a bin.
+    nom_target_rate : float
+        the nominal target rate.
+    p_value : float, optional
+        the p-value for significance.  The default is .0001
+
+    Returns
+    -------
+    (ci_low, ci_high) : tuple of floats
+        the lower and upper confidence limits for a bin.
+    '''
+
+    positives_avg = nom_target_rate * bin_count_avg         # expected number of positive outcomes in an average bin
+    if bin_count_avg > 0:
+        (ci_low, ci_upp) = proportion_confint(positives_avg, bin_count_avg,
+                                          alpha=p_value)    # to define the confidence interval
+    else:
+        (ci_low, ci_upp) = (0.0, 1.0)
+
+    return (ci_low, ci_upp)
+
+
+
+
+def apply__rate_tables_to_all_category(predictors, rate_tables, target_rate,
+                                       suffix='_r'
+                                       ):
+    '''
+    Parameters
+    ----------
+    predictors : dataframe
+        the collection of predictors.
+    rate_tables : dict
+        the dictionary of rate tables for the category elements..
+    target_rate : float
+        the fraction of positive outcomes.
+    suffix : string, optional
+        the suffix used to form the names of the rate elements.  The default is '_r'.
+
+    Returns
+    -------
+    predictors : dataframe
+        the *updated* collection of predictors
+    success : Boolean
+        success flag
+    '''
+
+    # if the rate_tables dictionary is not empty, find any available elements to rate
+    if rate_tables:
+        elements_with_rate_tables = list(rate_tables.keys())
+        all_elements = predictors.columns.to_list()
+        elements_to_rate = list(set(all_elements).intersection(elements_with_rate_tables))
+
+        for element_name in elements_to_rate:
+            # apply the (scoring) rates and add the new element to the dataset
+            rate_element_name = element_name + suffix
+            rate_element = apply__rate_table(predictors[element_name],
+                                      rate_tables[element_name],
+                                      target_rate)
+            predictors = pd.concat([predictors, rate_element.rename(rate_element_name)], axis=1)
+
+            # display rate counts
+            #print(predictors[rate_element_name].value_counts())
+
+    return predictors
+
+
+
+
+def apply__rate_table(element, rate_table, nom_rate, use_delta_rate=True):
+    '''
+    Parameters
+    ----------
+    element : Series, category
+        the categories to be translated into rates.
+    rate_table : data frame
+        table of relevant values related to the rate of positive outcomes.
+    nom_rate : float
+        nominal rate of positive outcomes, typically the target rate
+    use_delta_rate : Boolean, optional
+        flag to specify whether to use delta rates or base rates.  The default is True
+
+    Returns
+    -------
+    rate_element : Series, numeric
+        the rates associated with each category
+    '''
+
+    if use_delta_rate:
+        rate_dict = rate_table['scoring_delta_rate'].to_dict()
+        return element.map(rate_dict).astype('float').fillna(0.0)
+    else:
+        rate_dict = rate_table['scoring_rate'].to_dict()
+        return element.map(rate_dict).astype('float').fillna(nom_rate)
 
 
 

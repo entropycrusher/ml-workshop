@@ -57,15 +57,16 @@ predictors_train = mlw.apply__bin_boundaries_to_all_numeric(predictors_train, bi
                                            suffix=QUANTIZED_SUFFIX
                                            )
 
-# if any, estimate rates for all of the category elements
-#   and add them to the archive
-(archive['rate_tables'], success) = compute__rate_tables_for_all_category(predictors_train, target_train, archive['target_rate'],
-                                          target_p_value           =archive['config']['target_rate_p_value'],
-                                          confidence_limits_p_value=archive['config']['conf_limits_p_value']
-                                          )
+# Estimate rates for all of the category elements
+P_VALUE = 0.0001
+rate_tables = mlw.compute__rate_tables_for_all_category(predictors_train, target_train, target_rate,
+                                           target_p_value           =P_VALUE,
+                                           confidence_limits_p_value=P_VALUE
+                                           )
 
 # if any, cycle thru the rate-able elements and apply the rate tables
-(predictors_train, success)= apply__rate_tables_to_all_category(predictors_train, archive['rate_tables'], archive['target_rate'],
-                                    suffix=archive['config']['rate_element_postfix']
+RATE_SUFFIX = "_r"
+predictors_train = mlw.apply__rate_tables_to_all_category(predictors_train, rate_tables, target_rate,
+                                    suffix=RATE_SUFFIX
                                     )
 
