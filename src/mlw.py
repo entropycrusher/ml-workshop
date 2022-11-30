@@ -11,11 +11,14 @@ Created on Sat Oct 29 10:57:55 2022
 ## either expressed or implied.
 
 import pandas                 as     pd
+import numpy                  as     np
 import matplotlib.pyplot      as     plt
 import seaborn                as     sns              # another plotting package
 from sklearn.metrics          import roc_auc_score    # for measuring performance
 from sklearn.metrics          import roc_curve        # for plotting performance
 from sklearn.model_selection  import train_test_split # for partitioning a dataset
+from sklearn.tree             import DecisionTreeClassifier # for building a decision tree
+
 
 ROC_FIGURE_WIDTH        = 16
 ROC_FIGURE_HEIGHT       = 16
@@ -265,4 +268,213 @@ def run__standard_prep(data_folder_name="../data/",
            target_train, 
            target_test
            )
+
+
+
+def compute__target_rate(target):
+    '''
+    Parameters
+    ----------
+    target : Series
+        the target element.
+
+    Returns
+    -------
+    (target_rate, success) : float, Boolean
+        the fraction of positive outcomes and a success flag
+    '''
+    return target.mean()
+
+
+
+def compute__bin_boundaries_for_all_numeric(predictors, target,
+                                            criterion='entropy',
+                                            depth=2,
+                                            min_leaf=1000):
+    '''
+    Parameters
+    ----------
+    predictors : dataframe
+        the collection of predictors.
+    target : series
+        the target outcome.
+    criterion : string, optional
+        the optimization criterion for tree building. The default is 'entropy'.
+    depth : integer, optional
+        the maximum depth of the tree. The default is 2.
+    min_leaf : integer, optional
+        the minimum number of observations at a leaf of the tree. The default is 1000.
+
+    Returns
+    -------
+    (bin_boundaries, success) : dict, Boolean
+        the dictionary of bin bounaries for the numeric elements plus a success flag
+    '''
+    # get the list of numeric elements
+    numeric_element_names = list__numeric_elements(predictors)
+
+    # create empty dict for storing the bin boundaries
+    bin_boundaries = {}
+
+    # if any, cycle thru the numeric elements and determine bin boundaries
+    for element_name in numeric_element_names:
+        # use the function to compute the tree bin boundaries
+        tree_bin_boundaries = compute__tree_bin_boundaries(predictors[element_name], target,
+                                      tree_bin_criterion=criterion,
+                                      tree_bin_depth    =depth,
+                                      tree_bin_min_leaf =min_leaf
+                                      )
+
+        # add the key-value pair for the element name and the bin_boundaries to the dict
+        bin_boundaries[element_name] = tree_bin_boundaries
+
+    return bin_boundaries
+
+
+
+
+def apply__bin_boundaries_to_all_numeric(predictors, bin_boundaries, suffix='_q'):
+    '''
+    Parameters
+    ----------
+    predictors : dataframe
+        the collection of predictors.
+    bin_boundaries : dict
+        the dictionary of bin bounaries for the numeric elements.
+    suffix : string, optional
+        the suffix used to form the names of the binned elements.  The default is '_q'.
+
+    Returns
+    -------
+    predictors : dataframe
+        the *updated* collection of predictors
+    success : Boolean
+        success flag
+    '''
+
+    # if the bin_boundaries dictionary is not empty, find any available elements to bin
+    if bin_boundaries:
+        elements_with_bin_boundaries = list(bin_boundaries.keys())
+        all_elements = predictors.columns.to_list()
+        elements_to_bin = list(set(all_elements).intersection(elements_with_bin_boundaries))
+
+        # if there are elements in the dataset with corresponding bin boundaries...
+        for element_name in elements_to_bin:
+            # apply the bin boundaries and add the new element to the dataset
+            category_element_name = element_name + suffix
+            category_element = apply__bin_boundaries(predictors[element_name],
+                                          bin_boundaries[element_name])
+            predictors = pd.concat([predictors, category_element.rename(category_element_name)], axis=1)
+
+    return predictors
+
+
+
+
+def apply__bin_boundaries(element, bin_boundaries):
+    '''
+    Parameters
+    ----------
+    element : Series, numeric
+        the values to be binned.
+    bin_boundaries : list of floats
+        the list of boundaries obtained from the binning process.
+
+    Returns
+    -------
+    element_q : Series, category
+        the binned (quantized) element (categorical).
+    '''
+    element_q = pd.cut(element, bin_boundaries,
+                         include_lowest = True,
+                         duplicates     ='drop',
+                         right          = True
+                         )
+    
+    # add a category for missing values, even if none are present.
+    # if any are present, they will be filled with a 'dot' (period)
+    element_q = element_q.cat.add_categories('.').fillna('.')
+
+    return element_q
+
+
+
+
+def list__numeric_elements(df):
+    '''
+    Parameters
+    ----------
+    df : pandas DataFrame
+        typically the working DataFrame.
+
+    Returns
+    -------
+    list
+        the list of numeric elements that are present.
+    '''
+    return df.select_dtypes(include='number').columns.tolist()
+
+
+
+def compute__tree_bin_boundaries(predictor_series, target_series,
+                                 tree_bin_criterion='entropy',
+                                 tree_bin_depth=2,
+                                 tree_bin_min_leaf=1000
+                                 ):
+    '''
+    Parameters
+    ----------
+    predictor_series : Series, numeric
+        the predictor (input).
+    target_series : Series, numeric, binary
+        the target, or outcome of interest.
+    tree_bin_criterion : string, optional
+        the optimization criterion for tree building. 
+        The default is 'entropy'.
+    tree_bin_depth : int, optional
+        the maximum depth of the tree. 
+        The default is 2.
+    tree_bin_min_leaf : int, optional
+        the minimum number of observations at a leaf of the tree. 
+        The default is 1000.
+
+    Returns
+    -------
+    bin_boundaries : list, numeric
+        the list of bin cut points (or bin boundaries) to be used by a
+        downstream quantizer
+    '''
+    
+    # bolt the predictor_series and the target together into a mini dataframe,
+    #   and then drop any rows that contain NaNs in either column
+    mini_df = pd.concat([predictor_series, target_series], axis=1)
+    mini_df = mini_df.dropna()
+    mini_df = mini_df.reset_index(drop=True)
+    predictor_series = mini_df[predictor_series.name]
+    target_series    = mini_df[target_series.name]
+
+    # create a decision tree classifer object
+    tbc = DecisionTreeClassifier(criterion         = tree_bin_criterion,
+                                 max_depth         = tree_bin_depth,
+                                 min_samples_split = 2*tree_bin_min_leaf,
+                                 min_samples_leaf  = tree_bin_min_leaf)
+
+    # train the decision tree classifer
+    tbc = tbc.fit(pd.DataFrame(predictor_series),target_series)
+
+    # assign a node id to each row of data
+    node_id = pd.Series(tbc.apply(pd.DataFrame(predictor_series)))
+
+    # extract the boundaries based on node_id
+    bin_boundaries = list(predictor_series.groupby(node_id).max())
+
+    # refine the first and last boundaries for data beyond the training range
+    bin_boundaries.insert(0, -np.inf)
+    bin_boundaries[-1] =  np.inf
+
+    return bin_boundaries
+
+
+
+
 
