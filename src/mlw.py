@@ -311,7 +311,7 @@ def compute__bin_boundaries_for_all_numeric(predictors, target,
     Returns
     -------
     (bin_boundaries, success) : dict, Boolean
-        the dictionary of bin bounaries for the numeric elements plus a success flag
+        the dictionary of bin bounaries for the numeric elements
     '''
     # get the list of numeric elements
     numeric_element_names = list__numeric_elements(predictors)
@@ -351,8 +351,6 @@ def apply__bin_boundaries_to_all_numeric(predictors, bin_boundaries, suffix='_q'
     -------
     predictors : dataframe
         the *updated* collection of predictors
-    success : Boolean
-        success flag
     '''
 
     # if the bin_boundaries dictionary is not empty, find any available elements to bin
@@ -505,8 +503,6 @@ def compute__rate_tables_for_all_category(predictors, target,
     -------
     rate_tables : dict
         the dictionary of rate tables for the category elements
-    success : Boolean
-         a success flag.
     '''
     # create empty dict for storing the rate tables
     rate_tables = {}
@@ -721,8 +717,6 @@ def apply__rate_tables_to_all_category(predictors, rate_tables, target_rate,
     -------
     predictors : dataframe
         the *updated* collection of predictors
-    success : Boolean
-        success flag
     '''
 
     # if the rate_tables dictionary is not empty, find any available elements to rate
