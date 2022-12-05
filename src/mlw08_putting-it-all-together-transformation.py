@@ -66,23 +66,45 @@ predictors_train = mlw.apply__bin_boundaries_to_all_numeric(predictors_train, bi
                                            suffix=QUANTIZED_SUFFIX
                                            )
 # YOUR TURN: Apply the bin boundaries to your numeric elements.
-## Look at your predictors.  How many new predictor columns did you create?
+## Look at your predictors.  
+## How many new predictor columns did you create?  
+## How can you identify them?
 ## What is the data type for the new predictors?
+## Why two steps, one to compute bin boundaries and another to apply them?
+## Why not just combine them into a single step?
 
 
 # Compute the target rate
 target_rate = mlw.compute__target_rate(target_train)
 
 # Estimate rates for all of the category elements
-P_VALUE = 0.0001
+P_VALUE = 0.0001     # Note that we are NOT using .05 as our p-value.
 rate_tables = mlw.compute__rate_tables_for_all_category(predictors_train, target_train, target_rate,
                                            target_p_value           =P_VALUE,
                                            confidence_limits_p_value=P_VALUE
                                            )
+# YOUR TURN: Compute the rate tables for your category elements.
+## Look at a rate table for a binned element and compare it to the decision tree.
+## Which categories are predictive/not?
+## Pick out an element of interest and tell us what you see...
+## Are any of your elements useless?
+
+
+
 
 # if any, cycle thru the rate-able elements and apply the rate tables
 RATE_SUFFIX = "_r"
 predictors_train = mlw.apply__rate_tables_to_all_category(predictors_train, rate_tables, target_rate,
                                     suffix=RATE_SUFFIX
                                     )
+# YOUR TURN: Apply the rate tables to your category elements.
+## Look at your predictors.  
+## How many new predictor columns did you create?
+## How can you identify them?  Which ones were numeric to start with?
+## What is the data type for the new predictors?
+
+# CHALLENGE:
+## Why did we change numeric elements to categories and back to numbers again?
+
+
 

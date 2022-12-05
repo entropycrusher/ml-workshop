@@ -492,6 +492,7 @@ def compute__tree_bin_boundaries(predictor_series, target_series,
                        filled =TREE_PLOT_FILLED, 
                        rounded=TREE_PLOT_ROUNDED,
                        proportion=TREE_PLOT_PROPORTION)
+        plt.title("tree binning for " + predictor_series.name, fontsize=36)
         plt.show()
 
     # assign a node id to each row of data
