@@ -27,7 +27,13 @@ FILE_SEPARATOR      = ";"
 
 
 # Read the dataset.
-working = pd.read_csv(DATA_FOLDER_NAME + DATA_FILE_NAME, sep=FILE_SEPARATOR)
+element_names = []    # fill this list if names are *NOT* present in a header row
+if len(element_names) > 0:
+    working = pd.read_csv(DATA_FOLDER_NAME + DATA_FILE_NAME, sep=FILE_SEPARATOR,
+                        header=None, names=element_names
+                        )
+else:
+    working = pd.read_csv(DATA_FOLDER_NAME + DATA_FILE_NAME, sep=FILE_SEPARATOR)
 
 # YOUR TURN: Read your dataset and look at it in Spyder.
 ## Did you read the dataset successfully?  How do you know?
@@ -110,7 +116,7 @@ if len(constant_elements) > 0:
 
 
 # Are there any numeric nominal elements?
-## They look like numbers, but it doesn't make sense to apply math opeations to them.
+## They look like numbers, but it doesn't make sense to apply math operations to them.
 NUMERIC_NOMINAL_ELEMENTS = ['previous']
 MISSING_VALUE_CHARACTER  = '.'
 for element in NUMERIC_NOMINAL_ELEMENTS:
