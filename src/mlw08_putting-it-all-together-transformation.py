@@ -10,7 +10,6 @@ Machine Learning Workshop Session 8: Putting It All Together: Transformation
 
 # Import packages
 ## You can add more packages as you need them.
-import pandas as pd
 import mlw
 
 
@@ -37,25 +36,42 @@ BINARY_TARGET_NAME       = 'subscribed'
                         target_mapping          =TARGET_MAPPING,
                         binary_target_name      =BINARY_TARGET_NAME
                         )
+ 
 
-# Compute the target rate
-target_rate = mlw.compute__target_rate(target_train)
-
+     
+     
 # If any numeric elements exist, compute "smart" bin boundaries for them.
 TREE_BIN_CRITERION = 'entropy'
 TREE_BIN_DEPTH     = 2
 TREE_BIN_MIN_LEAF  = 1000
+TREE_PLOT          = True
+
 bin_boundaries = mlw.compute__bin_boundaries_for_all_numeric(predictors_train, target_train,
                                            criterion=TREE_BIN_CRITERION,
                                            depth    =TREE_BIN_DEPTH,
-                                           min_leaf =TREE_BIN_MIN_LEAF
+                                           min_leaf =TREE_BIN_MIN_LEAF,
+                                           tree_plot=TREE_PLOT
                                            )
+# YOUR TURN: Compute the bin boundaries for your numeric elements.
+## Look at your trees and the dictionary of bin boundaries.
+## Pick out an element of interest and tell us what you see...
+## Are any of the bin boundaries [-inf, inf]?  What does that mean?
+
+
+
 
 # Cycle thru the bin-able elements and apply the bin boundaries
 QUANTIZED_SUFFIX = "_q"
 predictors_train = mlw.apply__bin_boundaries_to_all_numeric(predictors_train, bin_boundaries,
                                            suffix=QUANTIZED_SUFFIX
                                            )
+# YOUR TURN: Apply the bin boundaries to your numeric elements.
+## Look at your predictors.  How many new predictor columns did you create?
+## What is the data type for the new predictors?
+
+
+# Compute the target rate
+target_rate = mlw.compute__target_rate(target_train)
 
 # Estimate rates for all of the category elements
 P_VALUE = 0.0001

@@ -18,6 +18,7 @@ from sklearn.metrics              import roc_auc_score    # for measuring perfor
 from sklearn.metrics              import roc_curve        # for plotting performance
 from sklearn.model_selection      import train_test_split # for partitioning a dataset
 from sklearn.tree                 import DecisionTreeClassifier # for building a decision tree
+from sklearn                      import tree                   # for the tree visualization
 from statsmodels.stats.proportion import proportion_confint
 from numpy                        import log as log
 from scipy.stats                  import binom
@@ -30,6 +31,13 @@ ROC_CURVE_COLOR         = 'tab:blue'
 ROC_DIAGONAL_COLOR      = 'tab:red'
 ROC_LINE_STYLE          = '--'
 ROC_LINE_WIDTH          = .75
+
+TREE_PLOT_WIDTH      = 32
+TREE_PLOT_HEIGHT     = 16
+TREE_PLOT_LABEL      = "root"
+TREE_PLOT_FILLED     = True
+TREE_PLOT_ROUNDED    = True
+TREE_PLOT_PROPORTION = True
 
 
 
@@ -165,6 +173,7 @@ def run__standard_prep(data_folder_name="../data/",
                        data_file_name="train.csv",
                        file_separator=",",
                        study_name="study_name",
+                       element_names=[],
                        rename_elements={},
                        ignore_elements=[],
                        target_element_name='target',
@@ -211,8 +220,13 @@ def run__standard_prep(data_folder_name="../data/",
 
     '''
     # Read the dataset.
-    working = pd.read_csv(data_folder_name + data_file_name, sep=file_separator)
-    
+    if len(element_names) > 0:
+        working = pd.read_csv(data_folder_name + data_file_name, sep=file_separator,
+                            header=None, names=element_names
+                            )
+    else:
+        working = pd.read_csv(data_folder_name + data_file_name, sep=file_separator)
+
     # Rename elements
     if len(rename_elements) > 0:
         working = working.rename(columns=rename_elements)
@@ -293,7 +307,8 @@ def compute__target_rate(target):
 def compute__bin_boundaries_for_all_numeric(predictors, target,
                                             criterion='entropy',
                                             depth=2,
-                                            min_leaf=1000):
+                                            min_leaf=1000,
+                                            tree_plot=False):
     '''
     Parameters
     ----------
@@ -307,6 +322,8 @@ def compute__bin_boundaries_for_all_numeric(predictors, target,
         the maximum depth of the tree. The default is 2.
     min_leaf : integer, optional
         the minimum number of observations at a leaf of the tree. The default is 1000.
+    tree_plot : Boolean, optional
+        flag to turn on/off display of the tree plot.  The default is False.
 
     Returns
     -------
@@ -325,7 +342,8 @@ def compute__bin_boundaries_for_all_numeric(predictors, target,
         tree_bin_boundaries = compute__tree_bin_boundaries(predictors[element_name], target,
                                       tree_bin_criterion=criterion,
                                       tree_bin_depth    =depth,
-                                      tree_bin_min_leaf =min_leaf
+                                      tree_bin_min_leaf =min_leaf,
+                                      display_tree_plot =tree_plot
                                       )
 
         # add the key-value pair for the element name and the bin_boundaries to the dict
@@ -420,7 +438,8 @@ def list__numeric_elements(df):
 def compute__tree_bin_boundaries(predictor_series, target_series,
                                  tree_bin_criterion='entropy',
                                  tree_bin_depth=2,
-                                 tree_bin_min_leaf=1000
+                                 tree_bin_min_leaf=1000,
+                                 display_tree_plot=False
                                  ):
     '''
     Parameters
@@ -438,6 +457,8 @@ def compute__tree_bin_boundaries(predictor_series, target_series,
     tree_bin_min_leaf : int, optional
         the minimum number of observations at a leaf of the tree. 
         The default is 1000.
+    display_tree_plot : Boolean, optional
+        flag to turn on/off display of the tree plot.  The default is False.
 
     Returns
     -------
@@ -462,6 +483,16 @@ def compute__tree_bin_boundaries(predictor_series, target_series,
 
     # train the decision tree classifer
     tbc = tbc.fit(pd.DataFrame(predictor_series),target_series)
+    
+    # display the decision tree
+    if display_tree_plot:
+        plt.rcParams["figure.figsize"] = (TREE_PLOT_WIDTH, TREE_PLOT_HEIGHT)
+        tree.plot_tree(tbc, feature_names=[predictor_series.name], 
+                       label  =TREE_PLOT_LABEL, 
+                       filled =TREE_PLOT_FILLED, 
+                       rounded=TREE_PLOT_ROUNDED,
+                       proportion=TREE_PLOT_PROPORTION)
+        plt.show()
 
     # assign a node id to each row of data
     node_id = pd.Series(tbc.apply(pd.DataFrame(predictor_series)))
