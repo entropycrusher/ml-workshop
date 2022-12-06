@@ -70,6 +70,7 @@ predictors_train = mlw.apply__bin_boundaries_to_all_numeric(predictors_train, bi
 ## How many new predictor columns did you create?  
 ## How can you identify them?
 ## What is the data type for the new predictors?
+## How often does each interval/category appear?
 ## Why two steps, one to compute bin boundaries and another to apply them?
 ## Why not just combine them into a single step?
 
@@ -105,6 +106,7 @@ predictors_train = mlw.apply__rate_tables_to_all_category(predictors_train, rate
 
 # CHALLENGE:
 ## Why did we change numeric elements to categories and back to numbers again?
+## What about missing values?  What happened to them?
 
 
 
