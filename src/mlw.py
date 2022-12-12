@@ -14,6 +14,7 @@ import pandas                     as     pd
 import numpy                      as     np
 import matplotlib.pyplot          as     plt
 import seaborn                    as     sns              # another plotting package
+import matplotlib.cm              as     cm
 from sklearn.metrics              import roc_auc_score    # for measuring performance
 from sklearn.metrics              import roc_curve        # for plotting performance
 from sklearn.model_selection      import train_test_split # for partitioning a dataset
@@ -22,6 +23,7 @@ from sklearn                      import tree                   # for the tree v
 from statsmodels.stats.proportion import proportion_confint
 from numpy                        import log as log
 from scipy.stats                  import binom
+from matplotlib.colors            import Normalize
 
 
 ROC_FIGURE_WIDTH        = 16
@@ -800,6 +802,117 @@ def apply__rate_table(element, rate_table, nom_rate, use_delta_rate=True):
         return element.map(rate_dict).astype('float').fillna(nom_rate)
 
 
+
+
+def plot__what_matters_single_categories(rate_tables, target_rate, study_name,
+                                         p_value=.0001, filename=""
+                                         ):
+    '''
+    Parameters
+    ----------
+    rate_tables : dict
+        the dictionary of rate tables for the category elements
+    target_rate : float
+        the fraction of positive outcomes.
+    study_name : string
+        name of the study, used for titling the plot.
+    p_value : float, optional
+        p-value for producing the confidence limits around the category rate.
+        The default is .0001.
+    filename : string, optional
+        name of the file for saving the plot.  The default is "".
+
+    Returns
+    -------
+    success : Boolean
+        success flag.  Also produces the plot in the Viewer
+    '''
+    # define constants
+    COUNT_SCALE_FACTOR     = 1.1        # 1.1 works fairly well to keep the bars from rubbing into each other
+    MIN_BAR_SIZE           = 0.1        #  determined empirically based on the figure size
+    PROFILE_COLOR_MAP      = 'RdYlBu_r' # 'RdBu_r' comes closest to my preferred Tableau colormap, 
+                                        #  but I also like 'Spectral_r', 'RdYlBu_r', and others
+                                        #  for more, see https://matplotlib.org/stable/tutorials/colors/colormaps.html
+    TARGET_RATE_LINE_COLOR = 'tab:gray' # 'tab:gray' is visible but unobtrusive
+    TARGET_RATE_BAND_COLOR = 'lightgray'
+    TARGET_RATE_BAND_ALPHA = 0.3
+
+    # capture the names of all of the elements represented in the rate_tables_dict
+    element_names    = list(rate_tables.keys())
+    is_first_element = True
+    
+    # across all elements, collect a roundup table of all of the significant categories
+    mini_table_columns = ['element','rate','count','positive','flag']
+    
+    for element_name in element_names:
+        mini_table  = rate_tables[element_name][mini_table_columns]
+        mini_table  = mini_table.loc[mini_table['count']>0]
+        mini_table  = mini_table.loc[mini_table['flag']!=0]
+    
+        if is_first_element:
+            roundup = mini_table.copy()
+            is_first_element=False
+        else:
+            roundup = pd.concat([roundup, mini_table])
+    
+    # sort the roundup table by rates, then by counts for ties
+    roundup = roundup.sort_values(['rate','count'])
+    
+    # convert the category index to a string, then create the description
+    roundup['category']    = roundup.index.astype(str)
+    roundup['description'] = roundup['element'] + ' : ' + roundup['category']
+    
+    # make the descriptions a bit more readable
+    roundup['description'] = roundup['description'].replace(
+        {'\(-inf, ': '<',
+         ', inf]'  : '>'
+         }, regex=True)
+    
+    # determine appropriate sizes for the bars in the plot
+    max_count = COUNT_SCALE_FACTOR * roundup['count'].max()     # adjustment to keep bars separated
+    roundup['bar_size'] = roundup['count']/max_count
+    condition = roundup['bar_size'] < MIN_BAR_SIZE
+    roundup.loc[condition,'bar_size'] = MIN_BAR_SIZE
+    
+    # estimate confidence bands around the target rate using an average bin count
+    bin_count_avg = roundup['count'].mean()
+    (train_pct_ci_low, train_pct_ci_upp) = compute__confidence_limits(bin_count_avg, target_rate, p_value)
+    
+    # set the color range based on the deviation from the target rate
+    if (roundup['rate'].min() < target_rate) and (roundup['rate'].max() > target_rate):
+        color_delta = min(target_rate - roundup['rate'].min(), roundup['rate'].max() - target_rate)
+        low_color   = target_rate - color_delta
+        high_color  = target_rate + color_delta
+    elif (roundup['rate'].min() > target_rate) and (roundup['rate'].max() > target_rate):
+        color_delta = min(target_rate, roundup['rate'].max() - target_rate)
+        low_color   = target_rate - color_delta
+        high_color  = target_rate + color_delta
+    else:
+        color_delta = min(1.0 - target_rate, target_rate - roundup['rate'].min())
+        low_color   = target_rate - color_delta
+        high_color  = target_rate + color_delta
+
+    my_norm     = Normalize(vmin=low_color, vmax=high_color)
+    my_cmap     = cm.get_cmap(PROFILE_COLOR_MAP)
+    
+    # draw the plot, adjusting the figure size based on the number of rows in the roundup table
+    figure_height = max(9, int(len(roundup)/5 + 1))
+    plt.rcParams["figure.figsize"]  = (16, figure_height)
+    plt.rcParams['lines.linestyle'] = '--'
+
+    plt.barh('description', 'rate',data=roundup, height='bar_size',
+             color=my_cmap(my_norm(roundup['rate'])))
+    plt.axvspan(train_pct_ci_low, train_pct_ci_upp, alpha=TARGET_RATE_BAND_ALPHA,
+                color=TARGET_RATE_BAND_COLOR)
+    plt.axvline(target_rate, color=TARGET_RATE_LINE_COLOR)
+    plt.title('What matters most for ' + study_name + ': ' + str(len(roundup)) + ' items')
+    plt.xlabel("Rate")
+    plt.ylabel("Element:Category")
+    sns.despine()
+    plt.savefig(filename)
+    plt.show();
+
+    return(True)
 
 
 
