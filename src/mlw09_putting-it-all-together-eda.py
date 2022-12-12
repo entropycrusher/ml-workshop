@@ -32,6 +32,7 @@ TREE_PLOT          = True
 QUANTIZED_SUFFIX = "_q"
 RATE_SUFFIX = "_r"
 P_VALUE = 0.0001     # Note that we are NOT using .05 as our p-value.
+BENCHMARK_FOLDER = "../bmrk/"
 
 
 # Run standard data prep (per workshop #7)
@@ -75,3 +76,14 @@ rate_tables = mlw.compute__rate_tables_for_all_category(predictors_train, target
 predictors_train = mlw.apply__rate_tables_to_all_category(predictors_train, rate_tables, target_rate,
                                     suffix=RATE_SUFFIX
                                     )
+
+# Save the bin boundaries as a benchmark file
+benchmark_filename = (BENCHMARK_FOLDER + STUDY_NAME + "_bin-boundaries.tab")
+success = mlw.export__dictionary(bin_boundaries,
+                             benchmark_filename,
+                             header = ['element', 'boundaries'])
+
+# Save the rate tables as a benchmark file
+(rate_table, success) = mlw.combine__rate_tables(rate_tables)
+benchmark_filename = (BENCHMARK_FOLDER + STUDY_NAME + "_rate-tables.tab")
+success = mlw.export__dataframe(rate_table, benchmark_filename)
