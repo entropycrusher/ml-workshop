@@ -15,6 +15,7 @@ import numpy                      as     np
 import matplotlib.pyplot          as     plt
 import seaborn                    as     sns              # another plotting package
 import matplotlib.cm              as     cm
+import csv
 from sklearn.metrics              import roc_auc_score    # for measuring performance
 from sklearn.metrics              import roc_curve        # for plotting performance
 from sklearn.model_selection      import train_test_split # for partitioning a dataset
@@ -24,6 +25,7 @@ from statsmodels.stats.proportion import proportion_confint
 from numpy                        import log as log
 from scipy.stats                  import binom
 from matplotlib.colors            import Normalize
+from collections                  import OrderedDict
 
 
 ROC_FIGURE_WIDTH        = 16
@@ -41,6 +43,10 @@ TREE_PLOT_FILLED     = True
 TREE_PLOT_ROUNDED    = True
 TREE_PLOT_PROPORTION = True
 
+EXTENSION_SEPARATOR_MAPPING = {'.tab':'\t',
+                               '.csv':',',
+                               '.ssv':';'
+                               }
 
 
 
@@ -913,6 +919,111 @@ def plot__what_matters_single_categories(rate_tables, target_rate, study_name,
     plt.show();
 
     return(True)
+
+
+
+
+def export__dictionary(dict, filename, header):
+    '''
+    Parameters
+    ----------
+    dict : dictionary
+        the dictionary object to export.
+    filename : string
+        the name to attach to the exported file.
+
+    Returns
+    -------
+    success
+        a success flag.
+    '''
+    ordered_dict = OrderedDict(sorted(dict.items()))  # to sort the dictionary by its keys
+    with open(filename, 'w', newline='') as f:
+        w = csv.writer(f, delimiter='\t')
+        w.writerow(header)
+        w.writerows(ordered_dict.items())
+
+    return (True)
+
+
+
+def combine__rate_tables(rate_tables):
+    '''
+    Parameters
+    ----------
+    rate_tables : dict
+        the dictionary of rate tables to be combined into a single dataframe.
+
+    Returns
+    -------
+    big_table : dataframe
+        the combined table of rates.
+    success : Boolean
+        a success flag.
+    '''
+    # define constants, the desired order of the columns
+    COLUMN_NAMES = ['element',
+                    'category',
+                    'rate',
+                    'count',
+                    'positive',
+                    'flag',
+                    'prob',
+                    'rate_lower',
+                    'rate_upper',
+                    'scoring_rate',
+                    'scoring_delta_rate'
+                    ]
+
+    # get the list of elements (there is one rate table for each)
+    # and initialize the big_table
+    element_names = list(rate_tables.keys())
+    big_table = pd.DataFrame()
+
+    # cycle thru all of the elements
+    for element_name in element_names:
+        mini_table  = rate_tables[element_name].copy()
+        mini_table  = mini_table.loc[mini_table['count']>0]
+
+        if (len(mini_table) > 0):
+            mini_table['category'] = mini_table.index
+            mini_table = mini_table.reset_index(drop=True)
+            mini_table = mini_table.reindex(columns=COLUMN_NAMES)
+            big_table = pd.concat([big_table, mini_table])
+
+    big_table['category'] = big_table['category'].astype('category')
+    big_table = big_table.sort_values(['element', 'category'])
+    big_table = big_table.reset_index(drop=True)
+
+    return (big_table, True)
+
+
+
+
+def export__dataframe(df, filename, include_index=False):
+    '''
+    Parameters
+    ----------
+    df : dataframe
+        the dataframe to export to a file.
+    filename : string
+        the name to attach to the exported file.
+    include_index : Boolean, optional
+        flag to include the index in the export. The default is False.
+
+    Returns
+    -------
+    success : Boolean
+        a success flag.
+    '''
+    # extract the column separator based on the file extension
+    # only works for three-letter extensions
+    extension = filename[-4:]
+    separator = EXTENSION_SEPARATOR_MAPPING[extension]
+
+    df.to_csv(filename, sep=separator, index=include_index)
+
+    return True
 
 
 

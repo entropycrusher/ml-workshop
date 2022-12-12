@@ -1,0 +1,10 @@
+element	boundaries
+age	[-inf, 28, 57, inf]
+campaign	[-inf, 1, 3, 6, inf]
+cons.conf.idx	[-inf, -37.5, -36.1, inf]
+cons.price.idx	[-inf, 92.843, 93.994, inf]
+emp.var.rate	[-inf, -2.9, -1.1, -0.1, inf]
+euribor3m	[-inf, 0.802, 1.235, 1.811, inf]
+nr.employed	[-inf, 5008.7, 5076.2, 5099.1, inf]
+pdays	[-inf, inf]
+previous	[-inf, 0, inf]
