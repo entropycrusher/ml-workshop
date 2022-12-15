@@ -22,10 +22,14 @@ from sklearn.model_selection      import train_test_split # for partitioning a d
 from sklearn.tree                 import DecisionTreeClassifier # for building a decision tree
 from sklearn                      import tree                   # for the tree visualization
 from statsmodels.stats.proportion import proportion_confint
-from numpy                        import log as log
+from numpy                        import log  as log
+from numpy                        import log2 as log2
 from scipy.stats                  import binom
 from matplotlib.colors            import Normalize
 from collections                  import OrderedDict
+from adjustText                   import adjust_text
+
+
 
 
 ROC_FIGURE_WIDTH        = 16
@@ -1024,6 +1028,171 @@ def export__dataframe(df, filename, include_index=False):
     df.to_csv(filename, sep=separator, index=include_index)
 
     return True
+
+
+
+def compute__complexity_and_uncertainty(rate_tables):
+    '''
+    Parameters
+    ----------
+    rate_tables : dict
+        a dictionary of rate tables
+
+    Returns
+    -------
+    uc_table : dataframe
+        a table of complexity, uncertainty, and non-sig category counts for each
+        element in the rate tables.
+    success : Boolean
+         a success flag.
+    '''
+    # initialize a dataframe to capture all of the results
+    uc_table = pd.DataFrame(columns=['element_name',
+                                    'complexity',
+                                    'uncertainty',
+                                    'total_count',
+                                    'sig_count',
+                                    'non_sig_count'
+                                    ])
+
+    # check that the oracle contains a rate_tables_dict
+    if rate_tables:
+        # capture the names of all of the elements represented in the rate_tables_dict
+        element_names = list(rate_tables.keys())
+
+        # cycle thru all of the elements
+        for element_name in element_names:
+
+            mini_table  = rate_tables[element_name][['count','positive','flag']].copy()
+            mini_table  = mini_table.loc[mini_table['count']>0]
+            total_count = len(mini_table)
+            mini_count  = mini_table['count'].sum()
+
+            # if any non-sig categories are present, collapse them into a single category
+            non_sig_count = (mini_table['flag']==0).sum()
+            sig_count     = (mini_table['flag']!=0).sum()
+            if (len(mini_table) > 1) and (non_sig_count > 0):
+                non_sig_table = mini_table.loc[mini_table['flag']==0]
+                mini_table    = mini_table.loc[mini_table['flag']!=0]
+                append_row    = {'count'    : non_sig_table['count'].sum(),
+                                 'positive' : non_sig_table['positive'].sum(),
+                                 'flag'     : 0}
+                mini_table = pd.concat([mini_table, pd.DataFrame([append_row])], ignore_index=True)
+
+            px    = mini_table['count']/mini_count
+            plogp = -px*log2(px)
+            hx    =  plogp.sum()
+
+            mini_table['negative'] = mini_table['count'] - mini_table['positive']
+
+            pxy   = mini_table.loc[mini_table['positive']>0, 'positive']/mini_count
+            pxy   = pd.concat([pxy, 
+                               mini_table.loc[mini_table['negative']>0, 'negative']/mini_count])
+            plogp = -pxy*log2(pxy)
+            hxy   = plogp.sum()
+
+            hy_x  = hxy - hx
+
+            new_row = {'element_name'  : element_name,
+                       'complexity'    : hx,
+                       'uncertainty'   : hy_x,
+                       'total_count'   : total_count,
+                       'sig_count'     : sig_count,
+                       'non_sig_count' : non_sig_count
+                       }
+            uc_table = pd.concat([uc_table, pd.DataFrame([new_row])], ignore_index=True)
+            
+        uc_table = uc_table.sort_values(['uncertainty','complexity','element_name'],
+                                        ascending=[True, True, True])
+
+        return (uc_table, True)
+
+
+def plot__uc_chart(uc_table, target_rate, study_name, 
+                   suffix='_q', filename=""):
+    '''
+    Parameters
+    ----------
+    uc_table : dataframe
+        a table of complexity, uncertainty, etc. for each element in the rate tables.
+    target_rate : float
+        the fraction of positive outcomes and a success flag.
+    study_name : string
+        name of the study, used for titling the plot.
+    suffix : string, optional
+        the suffix used to form the names of the binned elements. The default is '_q'.
+    filename : string, optional
+        name of the file for saving the plot.  The default is "".
+
+    Returns
+    -------
+    success : Boolean
+        success flag.  Also produces the plot in the Viewer
+    '''
+    # define constants
+    UC_FIGURE_WIDTH               = 16
+    UC_FIGURE_HEIGHT              = 16
+    COMMON_CATEGORY_COLOR         = 'tab:blue'
+    QUANTIZED_CATEGORY_COLOR      = 'tab:orange'
+    TARGET_UNCERTAINTY_COLOR      = 'gray'
+    TARGET_UNCERTAINTY_LINE_STYLE = 'dotted'
+    ADJUST_TEXT_EXPAND_X          = 1.2
+    ADJUST_TEXT_EXPAND_Y          = 1.2
+    TEXT_LABEL_MAX                = 30
+
+
+    target_uncertainty = compute__target_uncertainty(target_rate)
+    condition = uc_table['element_name'].str.endswith(suffix)
+
+    uc_table['color']               = COMMON_CATEGORY_COLOR       # common category elements
+    uc_table.loc[condition,'color'] = QUANTIZED_CATEGORY_COLOR    # binned elements
+
+    plt.figure(figsize=(UC_FIGURE_WIDTH, UC_FIGURE_HEIGHT))
+    plt.scatter(uc_table['complexity'], uc_table['uncertainty'],
+                c = uc_table['color'])
+    plt.axhline(target_uncertainty,
+                ls=TARGET_UNCERTAINTY_LINE_STYLE,
+                color=TARGET_UNCERTAINTY_COLOR)
+
+    if len(uc_table) <= TEXT_LABEL_MAX:
+        texts = [plt.text(uc_table['complexity'][i], 
+                 uc_table['uncertainty'][i], 
+                 uc_table['element_name'][i]) for i in range(len(uc_table))]
+        adjust_text(texts,
+                    expand_points=(ADJUST_TEXT_EXPAND_X,ADJUST_TEXT_EXPAND_Y))
+
+    plt.xlabel('complexity')
+    plt.ylabel('uncertainty')
+    plt.title('UC chart for ' + study_name + ' elements')
+    sns.despine()
+    plt.savefig(filename)
+    plt.show();
+
+
+    uc_table.drop(columns=['color'], inplace=True)
+
+    return(True)
+
+
+
+
+def compute__target_uncertainty(target_rate):
+    '''
+    Compute the target uncertainty (entropy), H(y), given the target rate.
+    Convenient to use when the target rate is already known or computed.
+
+    Parameters
+    ----------
+    target_rate : float
+        the fraction of positive outcomes for the entire dataset
+
+    Returns
+    -------
+    hy : float
+        the uncertainty of the target element
+    '''
+    hy = -target_rate*log2(target_rate) - (1.0-target_rate)*log2(1.0-target_rate)
+    return hy
 
 
 

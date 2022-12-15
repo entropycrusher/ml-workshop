@@ -30,9 +30,9 @@ TREE_BIN_MIN_LEAF  = 1000
 TREE_PLOT          = True
 
 QUANTIZED_SUFFIX = "_q"
-RATE_SUFFIX = "_r"
-P_VALUE = 0.0001     # Note that we are NOT using .05 as our p-value.
+RATE_SUFFIX      = "_r"
 BENCHMARK_FOLDER = "../bmrk/"
+P_VALUE          = 0.0001     # Note that we are NOT using .05 as our p-value.
 
 
 # Run standard data prep (per workshop #7)
@@ -50,7 +50,7 @@ BENCHMARK_FOLDER = "../bmrk/"
  
 
      
-     
+#### From workshop 8 ###########################################################     
 # If any numeric elements exist, compute "smart" bin boundaries for them.
 bin_boundaries = mlw.compute__bin_boundaries_for_all_numeric(predictors_train, target_train,
                                            criterion=TREE_BIN_CRITERION,
@@ -87,3 +87,62 @@ success = mlw.export__dictionary(bin_boundaries,
 (rate_table, success) = mlw.combine__rate_tables(rate_tables)
 benchmark_filename = (BENCHMARK_FOLDER + STUDY_NAME + "_rate-tables.tab")
 success = mlw.export__dataframe(rate_table, benchmark_filename)
+
+#### end of workshop 8 #########################################################
+
+
+#### new for workshop 9 ########################################################
+
+# Set the location for saving figures (plots, etc.)
+FIGS_FOLDER = "../figs/"
+
+# Produce the plot of what matters for the dataset
+plot_filename = (FIGS_FOLDER + STUDY_NAME + "_what-matters-chart.png")
+success = mlw.plot__what_matters_single_categories(rate_tables, 
+                                                   target_rate,
+                                                   STUDY_NAME,
+                                                   P_VALUE,
+                                                   filename=plot_filename
+                                                   )
+# YOUR TURN: Plot what matters for your dataset.
+## Look at your plot and tell us what you see...
+## Which elements are most predictive of a positive outcome?
+## Of a negative outcome?
+## Do any of the results surprise you?
+
+
+
+
+# Compute the uncertainty and complexity for each element
+(uc_table, success) = mlw.compute__complexity_and_uncertainty(rate_tables)
+
+# Plot the Uncertainty-Complexity (UC) Chart
+plot_filename = (FIGS_FOLDER + STUDY_NAME + "_uc-chart.png")
+success = mlw.plot__uc_chart(uc_table, target_rate, STUDY_NAME, QUANTIZED_SUFFIX,
+                             filename=plot_filename
+                             )
+# YOUR TURN: Produce the UC chart for your dataset.
+## Look at your plot and tell us what you see...
+## Which elements reduce uncertainty the most?
+## Which elements are the most/least complex?
+## Do the most complex elements reduce uncertainty the most?
+## Any surprises?
+## What makes the UC chart different from the What Matters chart?
+
+
+
+# Save the UC results as a benchmark file
+benchmark_filename = (BENCHMARK_FOLDER + STUDY_NAME + "_uc-table.tab")
+success = mlw.export__dataframe(uc_table, benchmark_filename)
+# YOUR TURN: Save the benchmark results.
+## What do you notice about the names of the benchmark files that you've saved?
+## Why should you save these files?
+
+
+
+# CHALLENGE:
+## Can you use the plot__what_matters function to produce a visual profile
+##  for a single element?
+
+
+#### end of workshop 9 #########################################################
