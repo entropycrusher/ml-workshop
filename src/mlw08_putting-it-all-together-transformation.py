@@ -58,8 +58,6 @@ bin_boundaries = mlw.compute__bin_boundaries_for_all_numeric(predictors_train, t
 ## Are any of the bin boundaries [-inf, inf]?  What does that mean?
 
 
-########## STOPPED HERE ########################################################
-
 # Cycle thru the bin-able elements and apply the bin boundaries
 QUANTIZED_SUFFIX = "_q"
 predictors_train = mlw.apply__bin_boundaries_to_all_numeric(predictors_train, bin_boundaries,
@@ -107,6 +105,8 @@ predictors_train = mlw.apply__rate_tables_to_all_category(predictors_train, rate
 # CHALLENGE:
 ## Why did we change numeric elements to categories and back to numbers again?
 ## What about missing values?  What happened to them?
+
+########## STOPPED HERE ########################################################
 
 
 
