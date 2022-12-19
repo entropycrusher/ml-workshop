@@ -77,6 +77,11 @@ predictors_train = mlw.apply__rate_tables_to_all_category(predictors_train, rate
                                     suffix=RATE_SUFFIX
                                     )
 
+#### end of workshop 8 #########################################################
+
+
+#### new for workshop 9 ########################################################
+
 # Save the bin boundaries as a benchmark file
 benchmark_filename = (BENCHMARK_FOLDER + STUDY_NAME + "_bin-boundaries.tab")
 success = mlw.export__dictionary(bin_boundaries,
@@ -88,10 +93,7 @@ success = mlw.export__dictionary(bin_boundaries,
 benchmark_filename = (BENCHMARK_FOLDER + STUDY_NAME + "_rate-tables.tab")
 success = mlw.export__dataframe(rate_table, benchmark_filename)
 
-#### end of workshop 8 #########################################################
 
-
-#### new for workshop 9 ########################################################
 
 # Set the location for saving figures (plots, etc.)
 FIGS_FOLDER = "../figs/"
@@ -109,6 +111,10 @@ success = mlw.plot__what_matters_single_categories(rate_tables,
 ## Which elements are most predictive of a positive outcome?
 ## Of a negative outcome?
 ## Do any of the results surprise you?
+
+# CHALLENGE:
+## Can you use the plot__what_matters function to produce a visual profile
+##  for a single element?
 
 
 
@@ -138,11 +144,6 @@ success = mlw.export__dataframe(uc_table, benchmark_filename)
 ## What do you notice about the names of the benchmark files that you've saved?
 ## Why should you save these files?
 
-
-
-# CHALLENGE:
-## Can you use the plot__what_matters function to produce a visual profile
-##  for a single element?
 
 
 #### end of workshop 9 #########################################################
