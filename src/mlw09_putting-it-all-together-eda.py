@@ -93,6 +93,10 @@ success = mlw.export__dictionary(bin_boundaries,
 benchmark_filename = (BENCHMARK_FOLDER + STUDY_NAME + "_rate-tables.tab")
 success = mlw.export__dataframe(rate_table, benchmark_filename)
 
+# YOUR TURN: Produce these benchmark files for your dataset.
+## Why might you want to save these files?
+
+
 
 
 # Set the location for saving figures (plots, etc.)
@@ -134,7 +138,7 @@ success = mlw.plot__uc_chart(uc_table, target_rate, STUDY_NAME, QUANTIZED_SUFFIX
 ## Do the most complex elements reduce uncertainty the most?
 ## Any surprises?
 ## What makes the UC chart different from the What Matters chart?
-
+## How many categories were tested for significance?
 
 
 # Save the UC results as a benchmark file
@@ -142,7 +146,7 @@ benchmark_filename = (BENCHMARK_FOLDER + STUDY_NAME + "_uc-table.tab")
 success = mlw.export__dataframe(uc_table, benchmark_filename)
 # YOUR TURN: Save the benchmark results.
 ## What do you notice about the names of the benchmark files that you've saved?
-## Why should you save these files?
+
 
 
 
