@@ -1,8 +1,8 @@
 # -*- coding: utf-8 -*-
 """
-Created on Tue Nov 15 06:45:23 2022
+Created on Fri Jan 13 07:45:23 2023
 
-Machine Learning Workshop Session 7: Putting It All Together: Data Prep
+Machine Learning Workshop: census-income script
 
 @author: Tim G.
 
