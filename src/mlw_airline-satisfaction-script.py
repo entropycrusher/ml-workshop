@@ -15,9 +15,9 @@ import mlw
 
 
 # Define constants and configuration information.
-STUDY_NAME          = "census-income"
+STUDY_NAME          = "airline-satisfaction"
 DATA_FOLDER_NAME    = "../data/"
-DATA_FILE_NAME      = "census-income_train.csv"
+DATA_FILE_NAME      = "airline-satisfaction_train.csv"
 FILE_SEPARATOR      = ","
 
 # YOUR TURN: Change the configuration information for your dataset.
@@ -27,8 +27,7 @@ FILE_SEPARATOR      = ","
 
 
 # Read the dataset.
-element_names = ["age", "work", "fnlw", "edu", "edun", "marit", "occ", "rel", 
-                 "race", "sex", "capg", "capl", "hours", "nativ", "ovr50"]    # fill this list if names are *NOT* present in a header row
+element_names = []    # fill this list if names are *NOT* present in a header row
 if len(element_names) > 0:
     working = pd.read_csv(DATA_FOLDER_NAME + DATA_FILE_NAME, sep=FILE_SEPARATOR,
                         header=None, names=element_names
@@ -45,9 +44,9 @@ else:
 
 # Are there any elements that you want to rename?
 ## RENAME_ELEMENTS = {'from':'to'}
-#RENAME_ELEMENTS = {'job':'occupation'}
-#if len(RENAME_ELEMENTS) > 0:
-#    working = working.rename(columns=RENAME_ELEMENTS)
+RENAME_ELEMENTS = {'Unnamed: 0':'row_id'}
+if len(RENAME_ELEMENTS) > 0:
+    working = working.rename(columns=RENAME_ELEMENTS)
 
 # YOUR TURN: Rename any elements as you prefer.
 ## Are there any characters you can or should *NOT* use in element names?
@@ -67,9 +66,9 @@ else:
 
 
 # Is the target element binary?  Do you need to "map" it to 0/1?
-TARGET_ELEMENT_NAME = 'ovr50'
-TARGET_MAPPING      = {' >50K':1, ' <=50K':0}
-BINARY_TARGET_NAME  = 'ovr50k'
+TARGET_ELEMENT_NAME = 'satisfaction'
+TARGET_MAPPING      = {'satisfied':1, 'neutral or dissatisfied':0}
+BINARY_TARGET_NAME  = 'satisfied'
 
 working[BINARY_TARGET_NAME] = working[TARGET_ELEMENT_NAME].map(TARGET_MAPPING).astype('float')
 working.drop(columns=TARGET_ELEMENT_NAME, inplace=True)
