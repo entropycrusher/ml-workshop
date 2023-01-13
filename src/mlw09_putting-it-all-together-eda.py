@@ -2,7 +2,7 @@
 """
 Created on Mon Dec 12 08:54:23 2022
 
-Machine Learning Workshop Session 8: Putting It All Together: EDA
+Machine Learning Workshop Session 9 : Putting It All Together: EDA
 
 @author: Tim G.
 
