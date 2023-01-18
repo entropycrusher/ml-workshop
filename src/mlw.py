@@ -15,7 +15,9 @@ import numpy                      as     np
 import matplotlib.pyplot          as     plt
 import seaborn                    as     sns              # another plotting package
 import matplotlib.cm              as     cm
+import statsmodels.api            as     sm
 import csv
+
 from sklearn.metrics              import roc_auc_score    # for measuring performance
 from sklearn.metrics              import roc_curve        # for plotting performance
 from sklearn.model_selection      import train_test_split # for partitioning a dataset
@@ -24,6 +26,7 @@ from sklearn                      import tree                   # for the tree v
 from statsmodels.stats.proportion import proportion_confint
 from numpy                        import log  as log
 from numpy                        import log2 as log2
+from numpy                        import linspace
 from scipy.stats                  import binom
 from matplotlib.colors            import Normalize
 from collections                  import OrderedDict
@@ -52,10 +55,14 @@ EXTENSION_SEPARATOR_MAPPING = {'.tab':'\t',
                                '.ssv':';'
                                }
 
+INTERCEPT_VALUE = 1.0
+
+
 
 
 def plot__roc_curve(target, estimates,
-                    study_name='bank-telemarketing'):
+                    study_name='bank-telemarketing', 
+                    filename=""):
     '''
     Parameters
     ----------
@@ -92,6 +99,7 @@ def plot__roc_curve(target, estimates,
     plt.title('ROC chart for ' + study_name)
     sns.despine()
     plt.legend(loc="lower right")
+    plt.savefig(filename)
     plt.show();
     
     return(area_under_curve)
@@ -1193,6 +1201,300 @@ def compute__target_uncertainty(target_rate):
     '''
     hy = -target_rate*log2(target_rate) - (1.0-target_rate)*log2(1.0-target_rate)
     return hy
+
+
+
+
+def compute__logistic_regression(predictors, 
+                                 target, 
+                                 uncertainty_complexity_table,
+                                 suffix='_r',
+                                 p_value=.0001,
+                                 uncertainty_limit=1.0
+                                 ):
+    '''
+    Parameters
+    ----------
+    predictors : dataframe
+        the collection of predictors.
+    target : Series
+        the target element.
+    uncertainty_complexity_table : dataframe
+        a table of complexity, uncertainty, etc. for each element in the rate tables.
+    suffix : string, optional
+        the suffix used to form the names of the rate elements.  The default is '_r'.
+    p_value : float, optional
+        p-value for testing significance of an element in the model. 
+        The default is .0001.
+    uncertainty_limit : float, optional
+        upper limit on uncertainty for keeping an element as a candidate for the model.
+        The default is 1.0.
+
+    Returns
+    -------
+    predictors : dataframe
+        the *updated* collection of predictors.
+    lrm : object
+        the logistic regression model object
+    success : Boolean
+        a success flag
+    '''
+
+    # define constants
+    PVALUE_MAX = 1.0
+
+    # identify the candidates for modeling
+    (candidates, useless_elements, too_good_elements) = select__rate_model_candidates(
+                                uncertainty_complexity_table,
+                                suffix='_r',
+                                candidate_uncertainty_limit=uncertainty_limit
+                                )
+
+    if len(candidates) > 0:     # if acceptable candidates exist, build a model
+        # add an intercept column to the training data and to the list of candidates
+        intercept  = pd.Series(INTERCEPT_VALUE, index=range(len(predictors)), name='intercept')
+        predictors = pd.concat([predictors, intercept], axis=1)
+        candidates.append('intercept')
+
+        # initialize the backward-stepwise search for significant predictors
+        pvalue_max = PVALUE_MAX
+        while pvalue_max >= p_value:
+
+            # fit the logistic regression model to the training data
+            logit_model=sm.Logit(target,predictors[candidates])
+            lrm=logit_model.fit(disp=False)
+
+            # find the 'worst' predictor and it's associated p-value
+            pvalues_sorted = lrm.pvalues.sort_values()
+            pvalue_max  = pvalues_sorted[-1]
+            element_max = pvalues_sorted.index[-1]
+
+            # remove the worst predictor if the p-value exceeds the threshold
+            if pvalue_max >= p_value:
+                candidates.remove(element_max)
+                print('Removed: ', element_max)
+            else:
+                print('Done.')
+
+        # return the updated predictors and the logistic regression model object
+        return(predictors, lrm, True)
+    else: # if no acceptable candidates exist, do nothing and return an empty model object
+        print('No viable candidates for modeling were found.')
+        print('No model was produced.')
+        return(predictors, {}, False)
+
+
+
+
+def select__rate_model_candidates(uncertainty_complexity_table,
+                                  suffix='_r',
+                                  candidate_uncertainty_limit=1.0
+                                  ):
+    '''
+    Parameters
+    ----------
+    uncertainty_complexity_table : dataframe
+        a table of complexity, uncertainty, etc. for each element in the rate tables.
+    suffix : string, optional
+        the suffix used to form the names of the rate elements.  The default is '_r'.
+    candidate_uncertainty_limit : float, optional
+        upper limit on uncertainty for keeping an element as a candidate for the model.
+        The default is 1.0.
+
+    Returns
+    -------
+    candidates : list
+        the useful elements for modeling.
+    useless_elements : list
+        the elements that are useless for modeling.
+    too_good_elements : list
+        the elements that are 'too good to be true' and should be excluded
+        from modeling.
+    '''
+    COMPLEXITY_MIN  = 0.0
+    UNCERTAINTY_MIN = 0.0
+
+    uc_table   = uncertainty_complexity_table.copy()
+
+    # identify the useless elements
+    useless_condition = uc_table['complexity'] <= COMPLEXITY_MIN
+    useless_elements  = uc_table.loc[useless_condition,'element_name'].to_list()
+
+    # trim the uc_table down to the potentially useful elements
+    useful_condition = uc_table['complexity'] > COMPLEXITY_MIN
+    uc_table = uc_table.loc[useful_condition]
+
+    # identify the elements that are too good to be true
+    too_good_condition = uc_table['uncertainty'] <= UNCERTAINTY_MIN
+    too_good_elements  = uc_table.loc[too_good_condition,'element_name'].to_list()
+
+    # trim the uc_table down to the not-too-good-to-be-true elements
+    useful_condition = uc_table['uncertainty'] > UNCERTAINTY_MIN
+    uc_table = uc_table.loc[useful_condition]
+
+    # trim the uc_table down to the elements with sufficient predictive power
+    useful_condition = uc_table['uncertainty'] <= candidate_uncertainty_limit
+    uc_table = uc_table.loc[useful_condition]
+
+    candidates = uc_table['element_name'].to_list()
+    candidates = [sub + suffix for sub in candidates]
+
+    # report on the useless and too-good-to-be-true elements
+    if len(useless_elements)  > 0:
+        print('The following elements were deemed useless: ', useless_elements)
+    if len(too_good_elements) > 0:
+        print('The following elements were deemed too good to be true: ', too_good_elements)
+
+    return (candidates, useless_elements, too_good_elements)
+
+
+
+
+def display__logistic_diagnostics(logistic_regression_model):
+    '''
+    Parameters
+    ----------
+    logistic_regression_model : object
+        logistic regression model object, complete with attributes and methods.
+
+    Returns
+    -------
+    success : Boolean
+        success flag.  Also displays the diagnostics in the console
+    '''
+    print('\nDiagnostics')
+    print(logistic_regression_model.summary())
+    print('\nElement\t\tp-value')
+    print(logistic_regression_model.pvalues)
+
+    return(True)
+
+
+
+
+def apply__logistic_regression(predictors, logistic_regression_model):
+    '''
+    Parameters
+    ----------
+    predictors : dataframe
+        the collection of predictors.
+    logistic_regression_model : object
+        logistic regression model object, complete with attributes and methods.
+
+    Returns
+    -------
+    predictors : dataframe
+        the *updated* collection of predictors.
+    prediction : series
+        predictions from the logistic model for the given predictors.
+    success : Boolean
+        success flag.  Also displays the diagnostics in the console
+    '''
+    elements = logistic_regression_model.params.index.to_list()
+
+    # add an intercept column if it is needed and doesn't exist in the dataset
+    #   currently being scored
+    if ('intercept' in elements) and ('intercept' not in predictors.columns.to_list()):
+        intercept = pd.Series(INTERCEPT_VALUE, index=range(len(predictors)), name='intercept')
+        predictors = pd.concat([predictors, intercept], axis=1)
+    return (predictors, logistic_regression_model.predict(predictors[elements]), True)
+
+
+
+
+def plot__gain_chart(target, prediction, target_rate, study_name, 
+                     bin_depth=4, min_leaf=100, bin_boundaries=[], 
+                     more_title_text=" (training subset)", filename=""):
+    '''
+    Parameters
+    ----------
+    target : Series
+        the target element (the observed outcomes)
+    prediction  : Series
+        Predicted outcomes
+    target_rate : float
+        the fraction of positive outcomes.
+    study_name : string
+        name of the study, used for titling the plot.
+    bin_depth : int, optional
+        maximum depth of the tree that creates the bins for the scoretiles.
+        The default is 4.
+    min_leaf : int, optional
+        minimum number of records associated with a scoretile.
+        The default is 100.
+    bin_boundaries : list, numeric, optional
+        the bin boundaries to use for defining the scoretiles.
+        If not supplied, they are computed from the data and the ntiles parameter.
+    more_title_text : string
+        text to add to the base chart title. The default is " (training subset)"
+    filename : string
+        name of the file for saving the plot.  The default is "".
+
+    Returns
+    -------
+    (bin_boundaries, gain_table, success) : list, dataframe, Boolean
+        a list of bin bounaries associated with the scoretiles,
+        a dataframe with the gain table,
+        plus a success flag.
+        The function also produces a plot in the Viewer and saves it to a file.
+    '''
+    # define constants
+    COUNT_SCALE_FACTOR     = 1.1        # 1.1 works fairly well to keep the bars from rubbing into each other
+    MIN_BAR_SIZE           = 0.1        #  determined empirically based on the figure size
+    TARGET_RATE_LINE_COLOR = 'tab:gray' # 'tab:gray' is visible but unobtrusive
+    FIGURE_HEIGHT          =  9
+    FIGURE_WIDTH           = 16
+
+    # compute the bin boundaries if they are not supplied
+    if len(bin_boundaries) == 0:
+        leaf_min_count = max(min_leaf,
+                             int(len(prediction)/(2**(bin_depth+1)))
+                             )
+        bin_boundaries = compute__tree_bin_boundaries(
+                                        prediction, 
+                                        target,
+                                        tree_bin_depth=bin_depth,
+                                        tree_bin_min_leaf=leaf_min_count
+                                        )
+        
+    # apply the bin boundaries to create quantized prediction levels, or scoretiles
+    prediction_q = apply__bin_boundaries(prediction, bin_boundaries)
+    
+    # compute the rates of observed target outcomes for each scoretile
+    gain_table = compute__rate_table(prediction_q, 
+                                                    target, 
+                                                    target_rate)
+    
+    # Need to get the number of *actual* tiles here!
+    ntiles = len(gain_table) - 1
+    gain_table['ntile'] = linspace(ntiles, 0, ntiles+1)
+    gain_table = gain_table.drop('.')
+
+    # determine appropriate sizes for the bars in the plot
+    max_count = COUNT_SCALE_FACTOR * gain_table['count'].max()     # adjustment to keep bars separated
+    gain_table['bar_size'] = gain_table['count']/max_count
+    condition = gain_table['bar_size'] < MIN_BAR_SIZE
+    gain_table.loc[condition,'bar_size'] = MIN_BAR_SIZE
+    
+    plt.rcParams["figure.figsize"]  = (FIGURE_WIDTH, FIGURE_HEIGHT)
+    plt.rcParams['lines.linestyle'] = '--'
+    
+    # looks like 50 ntiles is the most you can get on a plot cleanly
+    ax = plt.axes()
+    ax.set_xticks(gain_table['ntile'].astype(int))
+    
+    # create the plot
+    plt.bar(x='ntile', height='rate', data=gain_table, width='bar_size')   
+    plt.axhline(target_rate, color=TARGET_RATE_LINE_COLOR)
+    plt.title('Gain chart for ' + study_name + more_title_text)
+    plt.xlabel("Ntile")
+    plt.ylabel("Rate")
+    sns.despine()
+    plt.savefig(filename)
+    plt.show();
+    
+    return(bin_boundaries, gain_table, True)
+
 
 
 

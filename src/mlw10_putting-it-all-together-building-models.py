@@ -204,7 +204,7 @@ predictors_train = mlw.apply__rate_tables_to_all_category(predictors_train, rate
 #### end of workshop 8 #########################################################
 
 
-#### new for workshop 9 ########################################################
+#### start of workshop 9 #######################################################
 
 # Save the bin boundaries as a benchmark file
 benchmark_filename = (BENCHMARK_FOLDER + STUDY_NAME + "_bin-boundaries.tab")
@@ -269,7 +269,70 @@ success = mlw.export__dataframe(uc_table, benchmark_filename)
 ## What do you notice about the names of the benchmark files that you've saved?
 
 
-
-
 #### end of workshop 9 #########################################################
+
+#### start of workshop 10 ######################################################
+
+# train a panel-of-experts model, aka, a rate model
+
+# use a *backward-stepwise* procedure to produce a logistic regression model
+## from the full list of candidates
+CANDIDATE_UNCERTAINTY_LIMIT = 1.0
+ESTIMATE_NAME               ='estimate_train'
+SCORETILES_BIN_DEPTH        = 4
+
+(predictors_train, logistic_regression_model, success) = mlw.compute__logistic_regression(
+                                                            predictors_train,
+                                                            target_train,
+                                                            uc_table,
+                                                            RATE_SUFFIX,
+                                                            P_VALUE,
+                                                            uncertainty_limit=CANDIDATE_UNCERTAINTY_LIMIT
+                                                            )
+
+# if a model is successfully produced...
+if success:
+    ## display the logistic diagnostics
+    mlw.display__logistic_diagnostics(logistic_regression_model)
+
+    ## produce the predictions for the training data using the fitted model
+    (predictors_train, estimate_train, success) = mlw.apply__logistic_regression(
+                                                    predictors_train,
+                                                    logistic_regression_model
+                                                    )
+    estimate_train.name = ESTIMATE_NAME  # give the estimates Series a name
+
+
+    # plot the ROC curve and add the area under the curve to the archive
+    plot_filename = FIGS_FOLDER + STUDY_NAME + "_train-roc-chart.png"
+    roc_area_train = mlw.plot__roc_curve(target_train, estimate_train,
+                                         STUDY_NAME,
+                                         filename=plot_filename
+                                         )
+
+    # plot the gain chart for the predictions and capture the scoretile boundaries and gain table
+    plot_filename = FIGS_FOLDER + STUDY_NAME + "_train-gain-chart.png"
+    (scoretile_boundaries, scoretile_train_table, success) = mlw.plot__gain_chart(
+                                                                target_train, 
+                                                                estimate_train, 
+                                                                target_rate, 
+                                                                STUDY_NAME,
+                                                                bin_depth=SCORETILES_BIN_DEPTH,
+                                                                filename=plot_filename                                                                                          
+                                                                )
+
+
+
+
+
+
+#### end of workshop 10 ########################################################
+
+
+
+
+
+
+
+
 
