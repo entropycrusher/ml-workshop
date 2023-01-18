@@ -15,10 +15,36 @@ import mlw
 
 
 # Define constants and configuration information.
-STUDY_NAME          = "airline-satisfaction"
+STUDY_NAME          = "bank-telemarketing"
 DATA_FOLDER_NAME    = "../data/"
-DATA_FILE_NAME      = "airline-satisfaction_train.csv"
-FILE_SEPARATOR      = ","
+FIGS_FOLDER         = "../figs/"
+DATA_FILE_NAME      = "bank-telemarketing_train.csv"
+FILE_SEPARATOR      = ";"
+
+RENAME_ELEMENTS     = {}
+IGNORE_ELEMENTS     = ["duration"]
+
+TARGET_ELEMENT_NAME = 'y'
+TARGET_MAPPING      = {'yes':1, 'no':0}
+BINARY_TARGET_NAME  = 'subscribed'
+
+NUMERIC_NOMINAL_ELEMENTS = []
+MISSING_VALUE_CHARACTER  = '.'
+
+TEST_SET_FRACTION = 0.5
+RANDOM_SEED       = 62362
+
+TREE_BIN_CRITERION = 'entropy'
+TREE_BIN_DEPTH     = 2
+TREE_BIN_MIN_LEAF  = 1000
+TREE_PLOT          = True
+
+QUANTIZED_SUFFIX = "_q"
+RATE_SUFFIX      = "_r"
+BENCHMARK_FOLDER = "../bmrk/"
+P_VALUE          = 0.0001     # Note that we are NOT using .05 as our p-value.
+
+
 
 # YOUR TURN: Change the configuration information for your dataset.
 ## NOTE: Throughout this script, ALL_CAPS signifies configuration information.
@@ -44,7 +70,6 @@ else:
 
 # Are there any elements that you want to rename?
 ## RENAME_ELEMENTS = {'from':'to'}
-RENAME_ELEMENTS = {'Unnamed: 0':'row_id'}
 if len(RENAME_ELEMENTS) > 0:
     working = working.rename(columns=RENAME_ELEMENTS)
 
@@ -55,9 +80,8 @@ if len(RENAME_ELEMENTS) > 0:
 
 
 # Are there any elements that you want to ignore?
-#IGNORE_ELEMENTS = ["duration"]
-#if len(IGNORE_ELEMENTS) > 0:
-#    working.drop(columns=IGNORE_ELEMENTS, inplace=True)
+if len(IGNORE_ELEMENTS) > 0:
+    working.drop(columns=IGNORE_ELEMENTS, inplace=True)
 
 # YOUR TURN: Specify any elements you want to ignore.
 ## Note: this list may change during the course of your project.
@@ -66,12 +90,11 @@ if len(RENAME_ELEMENTS) > 0:
 
 
 # Is the target element binary?  Do you need to "map" it to 0/1?
-TARGET_ELEMENT_NAME = 'satisfaction'
-TARGET_MAPPING      = {'satisfied':1, 'neutral or dissatisfied':0}
-BINARY_TARGET_NAME  = 'satisfied'
-
-working[BINARY_TARGET_NAME] = working[TARGET_ELEMENT_NAME].map(TARGET_MAPPING).astype('float')
-working.drop(columns=TARGET_ELEMENT_NAME, inplace=True)
+if len(TARGET_MAPPING) > 0:
+    working[BINARY_TARGET_NAME] = working[TARGET_ELEMENT_NAME].map(TARGET_MAPPING).astype('float')
+    working.drop(columns=TARGET_ELEMENT_NAME, inplace=True)
+else:
+    BINARY_TARGET_NAME = TARGET_ELEMENT_NAME
 
 # YOUR TURN: Map the target element, if necessary.  
 ## What is the target rate?
@@ -117,8 +140,6 @@ if len(constant_elements) > 0:
 
 # Are there any numeric nominal elements?
 ## They look like numbers, but it doesn't make sense to apply math operations to them.
-NUMERIC_NOMINAL_ELEMENTS = []
-MISSING_VALUE_CHARACTER  = '.'
 for element in NUMERIC_NOMINAL_ELEMENTS:
     working[element] = working[element].astype(str)
     working[element].replace('nan', MISSING_VALUE_CHARACTER, inplace=True)
@@ -140,8 +161,6 @@ success = mlw.convert__object_to_category(working)
 
 # Split the working dataset into a training subset and testing subset,
 # each consisting of predictors (X) and a target (y)
-TEST_SET_FRACTION = 0.5
-RANDOM_SEED       = 62362
 (predictors_train, predictors_test, target_train, target_test, success) = mlw.split__dataset(
                 working, BINARY_TARGET_NAME,
                 test_set_fraction = TEST_SET_FRACTION,
@@ -155,17 +174,6 @@ RANDOM_SEED       = 62362
 ## Why use a random seed?
 
 #### From workshop 8 ###########################################################     
-
-TREE_BIN_CRITERION = 'entropy'
-TREE_BIN_DEPTH     = 2
-TREE_BIN_MIN_LEAF  = 1000
-TREE_PLOT          = True
-
-QUANTIZED_SUFFIX = "_q"
-RATE_SUFFIX      = "_r"
-BENCHMARK_FOLDER = "../bmrk/"
-P_VALUE          = 0.0001     # Note that we are NOT using .05 as our p-value.
-
 
 # If any numeric elements exist, compute "smart" bin boundaries for them.
 bin_boundaries = mlw.compute__bin_boundaries_for_all_numeric(predictors_train, target_train,
@@ -214,9 +222,6 @@ success = mlw.export__dataframe(rate_table, benchmark_filename)
 
 
 
-
-# Set the location for saving figures (plots, etc.)
-FIGS_FOLDER = "../figs/"
 
 # Produce the plot of what matters for the dataset
 plot_filename = (FIGS_FOLDER + STUDY_NAME + "_what-matters-chart.png")
