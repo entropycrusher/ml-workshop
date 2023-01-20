@@ -274,13 +274,13 @@ success = mlw.export__dataframe(uc_table, benchmark_filename)
 #### start of workshop 10 ######################################################
 
 # train a panel-of-experts model, aka, a rate model
-
-# use a *backward-stepwise* procedure to produce a logistic regression model
-## from the full list of candidates
 CANDIDATE_UNCERTAINTY_LIMIT = 1.0
 ESTIMATE_NAME               ='estimate_train'
 SCORETILES_BIN_DEPTH        = 4
 
+
+# use a *backward-stepwise* procedure to produce a logistic regression model
+## from the full list of candidates
 (predictors_train, logistic_regression_model, success) = mlw.compute__logistic_regression(
                                                             predictors_train,
                                                             target_train,
@@ -320,6 +320,12 @@ if success:
                                                                 bin_depth=SCORETILES_BIN_DEPTH,
                                                                 filename=plot_filename                                                                                          
                                                                 )
+
+    top_scoretile_train = scoretile_train_table['rate'][-1]
+    top_scoretile_gain_train = scoretile_train_table['rate'][-1]/target_rate
+    
+    benchmark_filename = BENCHMARK_FOLDER + STUDY_NAME + "_scoretile-train-table.tab"
+    success = mlw.export__dataframe(scoretile_train_table, benchmark_filename)
 
 
 
