@@ -32,3 +32,5 @@ bmrk/census-income.zip
 src/.pylint.d/mlw09_putting-it-all-together-eda1.stats
 figs/bank-telemarketing_train-gain-chart.png
 figs/bank-telemarketing_train-roc-chart.png
+figs/census-income_train-gain-chart.png
+figs/census-income_train-roc-chart.png

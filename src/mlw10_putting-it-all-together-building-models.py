@@ -290,6 +290,15 @@ SCORETILES_BIN_DEPTH        = 4
                                                             uncertainty_limit=CANDIDATE_UNCERTAINTY_LIMIT
                                                             )
 
+# YOUR TURN: Produce the panel-of-experts model for your dataset.
+## Are you familiar with the idea of a backward-stepwise procedure?
+## How does it work?  Did you notice any elements being removed?
+## Were any elements deemed useless?  Why?
+## Why use it?
+## What other options are there?
+
+
+
 # if a model is successfully produced...
 if success:
     ## display the logistic diagnostics
@@ -327,12 +336,20 @@ if success:
     benchmark_filename = BENCHMARK_FOLDER + STUDY_NAME + "_scoretile-train-table.tab"
     success = mlw.export__dataframe(scoretile_train_table, benchmark_filename)
 
+# YOUR TURN: Produce the diagnostics, the estimates, the plots,
+## and the benchmarks for your dataset.
+## What do you notice about the diagnostics for your model?
+## Which of your experts are weighted the most? the least?
+## How do those weights track with what matters and with the UC chart?
+## Are there any elements missing from the model that you expected to see?
 
-
-
-
+## Any questions about the ROC chart (that we've seen previously)?
+## Are you familiar with the Gain chart?
+## What does it tell you?
+## Do we need both?  Why/not?
 
 #### end of workshop 10 ########################################################
+
 
 
 
