@@ -268,3 +268,82 @@ success = mlw.export__dataframe(uc_table, benchmark_filename)
 
 #### end of workshop 9 #########################################################
 
+#### start of workshop 10 ######################################################
+
+# train a panel-of-experts model, aka, a rate model
+CANDIDATE_UNCERTAINTY_LIMIT = 1.0
+ESTIMATE_NAME               ='estimate_train'
+SCORETILES_BIN_DEPTH        = 4
+
+
+# use a *backward-stepwise* procedure to produce a logistic regression model
+## from the full list of candidates
+(predictors_train, logistic_regression_model, success) = mlw.compute__logistic_regression(
+                                                            predictors_train,
+                                                            target_train,
+                                                            uc_table,
+                                                            RATE_SUFFIX,
+                                                            P_VALUE,
+                                                            uncertainty_limit=CANDIDATE_UNCERTAINTY_LIMIT
+                                                            )
+
+# YOUR TURN: Produce the panel-of-experts model for your dataset.
+## Are you familiar with the idea of a backward-stepwise procedure?
+## How does it work?  Did you notice any elements being removed?
+## Were any elements deemed useless?  Why?
+## Why use it?
+## What other options are there?
+
+
+
+# if a model is successfully produced...
+if success:
+    ## display the logistic diagnostics
+    mlw.display__logistic_diagnostics(logistic_regression_model)
+
+    ## produce the predictions for the training data using the fitted model
+    (predictors_train, estimate_train, success) = mlw.apply__logistic_regression(
+                                                    predictors_train,
+                                                    logistic_regression_model
+                                                    )
+    estimate_train.name = ESTIMATE_NAME  # give the estimates Series a name
+
+
+    # plot the ROC curve and add the area under the curve to the archive
+    plot_filename = FIGS_FOLDER + STUDY_NAME + "_train-roc-chart.png"
+    roc_area_train = mlw.plot__roc_curve(target_train, estimate_train,
+                                         STUDY_NAME,
+                                         filename=plot_filename
+                                         )
+
+    # plot the gain chart for the predictions and capture the scoretile boundaries and gain table
+    plot_filename = FIGS_FOLDER + STUDY_NAME + "_train-gain-chart.png"
+    (scoretile_boundaries, scoretile_train_table, success) = mlw.plot__gain_chart(
+                                                                target_train, 
+                                                                estimate_train, 
+                                                                target_rate, 
+                                                                STUDY_NAME,
+                                                                bin_depth=SCORETILES_BIN_DEPTH,
+                                                                filename=plot_filename                                                                                          
+                                                                )
+
+    top_scoretile_train = scoretile_train_table['rate'][-1]
+    top_scoretile_gain_train = scoretile_train_table['rate'][-1]/target_rate
+    
+    benchmark_filename = BENCHMARK_FOLDER + STUDY_NAME + "_scoretile-train-table.tab"
+    success = mlw.export__dataframe(scoretile_train_table, benchmark_filename)
+
+# YOUR TURN: Produce the diagnostics, the estimates, the plots,
+## and the benchmarks for your dataset.
+## What do you notice about the diagnostics for your model?
+## Which of your experts are weighted the most? the least?
+## How do those weights track with what matters and with the UC chart?
+## Are there any elements missing from the model that you expected to see?
+
+## Any questions about the ROC chart (that we've seen previously)?
+## Are you familiar with the Gain chart?
+## What does it tell you?
+## Do we need both?  Why/not?
+
+#### end of workshop 10 ########################################################
+
