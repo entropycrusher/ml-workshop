@@ -2,7 +2,7 @@
 """
 Created on Fri Jan 13 07:46:23 2023
 
-Machine Learning Workshop: airline-satisfaction script
+Machine Learning Workshop: machine learning workshop 10: building models
 
 @author: Tim G.
 
