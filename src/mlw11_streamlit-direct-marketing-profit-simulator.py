@@ -136,10 +136,10 @@ axis[0, 0].axhline(0.0, color=ZERO_COLOR, ls=LINE_STYLE, lw=LINE_WIDTH)
 axis[0, 0].set_title("Profit (Model and No Model) vs Number of Contacts")
 
 # plot revenue and cost
-axis[0, 1].fill_between(simulator_table['number_of_contacts'], 
-                        simulator_table['revenue'],
-                        simulator_table['cost'],
-                        color='C1', alpha=0.1)
+#axis[0, 1].fill_between(simulator_table['number_of_contacts'], 
+#                        simulator_table['revenue'],
+#                        simulator_table['cost'],
+#                        color='C1', alpha=0.1)
 axis[0, 1].plot(simulator_table['number_of_contacts'], simulator_table['revenue'],
                 color=CURVE_COLOR, lw=LINE_WIDTH)
 axis[0, 1].plot(simulator_table['number_of_contacts'], simulator_table['cost'],
