@@ -350,7 +350,9 @@ if success:
 
 #### end of workshop 10 ########################################################
 
-
+    scored_data_filename = BENCHMARK_FOLDER + STUDY_NAME + "_scores-train.tab"
+    success = mlw.export__dataframe(zip(estimate_train, target_train), 
+                                    scored_data_filename)
 
 
 

@@ -8,7 +8,6 @@ Created on Tue Jan 10 09:22:54 2023
 import streamlit         as st
 import pandas            as pd
 import matplotlib.pyplot as plt
-import entropy_crusher   as en
 import numpy             as np
 
 # define constants and configuration information
@@ -19,11 +18,8 @@ SCORES_TRAIN_SUFFIX   = "_scores-train.tab"
 scores_train_filename = (STUDY_NAME + SCORES_TRAIN_SUFFIX)
 
 # load the scores and outcomes from the training data
-(scores_train, success) = en.load__raw_data(BENCHMARK_FOLDER, scores_train_filename,
-                                            element_names=[], date_elements=[])
-scores_train = scores_train.rename(columns={'Unnamed: 0':'index'})
-scores_train = scores_train.sort_values(by       =['estimate_train','index'] , 
-                                        ascending=[False,            False])
+scores_train = pd.read_csv(BENCHMARK_FOLDER + scores_train_filename, sep='\t')
+scores_train = scores_train.sort_values(by='estimate_train', ascending=False)
 
 
 # compute the target rate (observed rate of positive outcomes)
