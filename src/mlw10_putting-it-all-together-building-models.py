@@ -357,8 +357,42 @@ if success:
 
 
 
+# Create a oracle (object) to hold all of the relevant model info
+oracle = {}
+
+oracle['bin_boundaries']                     = bin_boundaries
+oracle['rate_tables']                        = rate_tables
+oracle['target_rate']                        = target_rate
+oracle['logistic_regression_model']          = logistic_regression_model
+
+oracle['config']                             = {}
+oracle['config']['study_name']               = STUDY_NAME
+oracle['config']['element_names']            = element_names
+oracle['config']['rename_elements']          = RENAME_ELEMENTS
+oracle['config']['ignore_elements']          = IGNORE_ELEMENTS
+oracle['config']['target_element_name']      = TARGET_ELEMENT_NAME
+oracle['config']['target_mapping']           = TARGET_MAPPING
+oracle['config']['binary_target_name']       = BINARY_TARGET_NAME
+oracle['config']['numeric_nominal_elements'] = NUMERIC_NOMINAL_ELEMENTS
 
 
 
+# Export the oracle to a 'pickle' file
+import pickle
+oracle_filename = (BENCHMARK_FOLDER + STUDY_NAME + "_oracle.pkl")
+fo = open(oracle_filename, 'wb')
+pickle.dump(oracle, fo)
+fo.close()
+
+
+
+# Plot the distribution of predictions (scores)
+import matplotlib.pyplot as plt
+estimate_train.plot.hist(bins=25)
+title_string = 'What does the distribution of scores look like?'
+plt.title(title_string)
+plt.xlabel('Score')
+plt.ylabel('Frequency')
+plt.show()
 
 
