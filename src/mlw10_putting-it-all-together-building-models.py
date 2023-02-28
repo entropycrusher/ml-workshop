@@ -357,7 +357,7 @@ if success:
 
 
 
-# Create a oracle (object) to hold all of the relevant model info
+# Create an oracle (object) to hold all of the relevant model info
 oracle = {}
 
 oracle['bin_boundaries']                     = bin_boundaries
